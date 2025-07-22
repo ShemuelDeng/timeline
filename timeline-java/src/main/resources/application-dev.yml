@@ -1,0 +1,107 @@
+server:
+  port: 8088
+
+
+
+############## Sa-Token 配置 (文档: https://sa-token.cc) ##############
+sa-token:
+  # token 名称（同时也是 cookie 名称）
+  token-name: Authorization
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
+  timeout: 2592000
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: -1
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）
+  is-share: true
+  # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: true
+
+
+# DataSource Config
+db:
+  type: mysql
+spring:
+  datasource:
+    url: jdbc:mysql://172.16.6.69:3306/vv_landlord?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    username: root
+    password: Vvlife@2019
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP 连接池配置（默认已启用）
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 20
+      minimum-idle: 5
+    sql:
+      init:
+        schema-locations: classpath:db/schema-mysql.sql
+  web:
+    resources:
+      static-locations: classpath:/static/
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+#  mvc:
+#    static-path-pattern: /statics/**
+#    resources:
+#      static-locations: classpath:/statics/,classpath:/META-INF/resources/
+#    pathmatch:
+#      matching-strategy: ant_path_matcher
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml  # XML 映射文件路径
+  type-aliases-package: com.shemuel.landlordhelper.entity  # 实体类包路径
+  configuration:
+    map-underscore-to-camel-case: true  # 自动驼峰命名转换
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印 SQL 日志（调试用）
+
+knife4j:
+  enable: true
+  openapi:
+    title: Knife4j官方文档
+    description: "`我是测试`,**你知道吗**
+    # aaa"
+    email: xiaoymin@foxmail.com
+    concat: 八一菜刀
+    url: https://docs.xiaominfo.com
+    version: v4.0
+    license: Apache 2.0
+    license-url: https://stackoverflow.com/
+    terms-of-service-url: https://stackoverflow.com/
+    group:
+      test1:
+        group-name: 分组名称
+        api-rule: package
+        api-rule-resources:
+          - com.shemuel
+
+
+wx:
+  appid: wx7b4a5857a94deb45
+  secret: b43d4aacccdf8200e48a207ea7748eb5
+  openIds: o5Vf67DEFy-mHQ3UZJcU6Gyf1T5c
+  templateId:
+    gold: mylZLVa52KIvhJtZjS0kmvjxNesvjzngU1Ll0GMx9Lw
+
+gaode:
+  api:
+    key: dc9a8412cdc58d95c2ab7e5aa87323b6
+
+
+dromara:
+  x-file-storage: #文件存储配置
+    default-platform: qiniu-kodo-1 #默认使用的存储平台
+    thumbnail-suffix: ".min.jpg" #缩略图后缀，例如【.min.jpg】【.png】
+    #对应平台的配置写在这里，注意缩进要对齐
+    qiniu-kodo:
+      - platform: qiniu-kodo-1 # 存储平台标识
+        enable-storage: true  # 启用存储
+        access-key:
+        secret-key:
+        bucket-name: shemuel
+        domain: shemuel.s3.cn-east-1.qiniucs.com/ # 访问域名，注意“/”结尾，例如：http://abc.hn-bkt.clouddn.com/
+        base-path: base/ # 基础路径
