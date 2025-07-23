@@ -2,4 +2,39 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shemuel.timeline.mapper.EventMapper">
     <!-- 可以在这里添加自定义的复杂SQL查询 -->
+
+    <!-- 自定义 ResultMap，确保走 TypeHandler -->
+    <resultMap id="EventResultMap" type="com.shemuel.timeline.entity.Event">
+        <id column="id" property="id" />
+        <result column="timeline_id" property="timelineId"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="tag" property="tag"/>
+        <result column="location" property="location"/>
+        <result column="images" property="images"
+                jdbcType="VARCHAR"
+                typeHandler="com.shemuel.timeline.config.FastjsonListStringTypeHandler"/>
+        <result column="event_time" property="eventTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 分页查询方法 -->
+    <select id="selectPage" resultMap="EventResultMap">
+        SELECT * FROM event
+        <where>
+            <if test="event.timelineId != null">
+                AND timeline_id = #{event.timelineId}
+            </if>
+            <if test="event.tag != null">
+                AND tag = #{event.tag}
+            </if>
+            <if test="event.location != null">
+                AND location = #{event.location}
+            </if>
+        </where>
+        ORDER BY event_time DESC
+    </select>
+
+
 </mapper> 

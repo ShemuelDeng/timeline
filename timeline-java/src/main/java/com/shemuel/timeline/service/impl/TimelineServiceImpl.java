@@ -29,6 +29,7 @@ public class TimelineServiceImpl extends ServiceImpl<TimelineMapper, Timeline> i
         wrapper.eq(timeline.getUserId() != null, Timeline::getUserId, timeline.getUserId());
         wrapper.eq(timeline.getTitle() != null, Timeline::getTitle, timeline.getTitle());
         wrapper.eq(timeline.getDescription() != null, Timeline::getDescription, timeline.getDescription());
+        wrapper.eq(timeline.getTag() != null, Timeline::getTag, timeline.getTag());
         wrapper.eq(timeline.getCoverUrl() != null, Timeline::getCoverUrl, timeline.getCoverUrl());
         wrapper.eq(timeline.getCreateTime() != null, Timeline::getCreateTime, timeline.getCreateTime());
         wrapper.eq(timeline.getUpdateTime() != null, Timeline::getUpdateTime, timeline.getUpdateTime());
@@ -46,6 +47,7 @@ public class TimelineServiceImpl extends ServiceImpl<TimelineMapper, Timeline> i
         wrapper.eq(timeline.getUserId() != null, Timeline::getUserId, timeline.getUserId());
         wrapper.eq(timeline.getTitle() != null, Timeline::getTitle, timeline.getTitle());
         wrapper.eq(timeline.getDescription() != null, Timeline::getDescription, timeline.getDescription());
+        wrapper.eq(timeline.getTag() != null, Timeline::getTag, timeline.getTag());
         wrapper.eq(timeline.getCoverUrl() != null, Timeline::getCoverUrl, timeline.getCoverUrl());
         wrapper.eq(timeline.getCreateTime() != null, Timeline::getCreateTime, timeline.getCreateTime());
         wrapper.eq(timeline.getUpdateTime() != null, Timeline::getUpdateTime, timeline.getUpdateTime());
@@ -58,7 +60,7 @@ public class TimelineServiceImpl extends ServiceImpl<TimelineMapper, Timeline> i
     @Override
     public Timeline insert(Timeline timeline) {
         save(timeline);
-        return timeline;
+        return getById(timeline.getId());
     }
 
     /**

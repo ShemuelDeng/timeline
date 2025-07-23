@@ -2,11 +2,8 @@ package com.shemuel.timeline.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
-import com.shemuel.timeline.entity.Timeline;
-import com.shemuel.timeline.exception.ServiceException;
-import com.shemuel.timeline.service.TimelineService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import com.shemuel.timeline.mapper.EventMapper;
 import com.shemuel.timeline.entity.Event;
@@ -24,23 +21,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EventServiceImpl extends ServiceImpl<EventMapper, Event> implements EventService {
 
-    private final TimelineService timelineService;
-
     /**
      * 查询时间轴事件表分页列表
      */
     @Override
     public IPage<Event> selectPage(Event event) {
-        LambdaQueryWrapper<Event> wrapper = new LambdaQueryWrapper<>();
-        // 构建查询条件
-        wrapper.eq(event.getId() != null, Event::getId, event.getId());
-        wrapper.eq(event.getTimelineId() != null, Event::getTimelineId, event.getTimelineId());
-        wrapper.eq(event.getContent() != null, Event::getContent, event.getContent());
-        wrapper.eq(event.getIsRich() != null, Event::getIsRich, event.getIsRich());
-        wrapper.eq(event.getEventTime() != null, Event::getEventTime, event.getEventTime());
-        wrapper.eq(event.getCreateTime() != null, Event::getCreateTime, event.getCreateTime());
-        wrapper.eq(event.getUpdateTime() != null, Event::getUpdateTime, event.getUpdateTime());
-        return page(PageUtil.getPage(), wrapper);
+        Page<Event> page = PageUtil.getPage(); // 你原本的分页工具
+        return this.baseMapper.selectPage(page, event);
     }
 
     /**
@@ -52,8 +39,11 @@ public class EventServiceImpl extends ServiceImpl<EventMapper, Event> implements
         // 构建查询条件
         wrapper.eq(event.getId() != null, Event::getId, event.getId());
         wrapper.eq(event.getTimelineId() != null, Event::getTimelineId, event.getTimelineId());
+        wrapper.eq(event.getTitle() != null, Event::getTitle, event.getTitle());
         wrapper.eq(event.getContent() != null, Event::getContent, event.getContent());
-        wrapper.eq(event.getIsRich() != null, Event::getIsRich, event.getIsRich());
+        wrapper.eq(event.getTag() != null, Event::getTag, event.getTag());
+        wrapper.eq(event.getLocation() != null, Event::getLocation, event.getLocation());
+        wrapper.eq(event.getImages() != null, Event::getImages, event.getImages());
         wrapper.eq(event.getEventTime() != null, Event::getEventTime, event.getEventTime());
         wrapper.eq(event.getCreateTime() != null, Event::getCreateTime, event.getCreateTime());
         wrapper.eq(event.getUpdateTime() != null, Event::getUpdateTime, event.getUpdateTime());
@@ -64,17 +54,12 @@ public class EventServiceImpl extends ServiceImpl<EventMapper, Event> implements
      * 新增时间轴事件表
      */
     @Override
-    public boolean insert(Event event) {
-
-        Timeline timeline = timelineService.getById(event.getTimelineId());
-        if (Objects.isNull(timeline)){
-            throw new ServiceException("时间轴不存在");
-        }
-
-        if(Objects.isNull(event.getEventTime())){
+    public Event insert(Event event) {
+        if (event.getEventTime() == null){
             event.setEventTime(LocalDateTime.now());
         }
-        return save(event);
+        save(event);
+        return getById(event.getId());
     }
 
     /**

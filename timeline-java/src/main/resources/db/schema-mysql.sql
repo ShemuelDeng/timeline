@@ -51,18 +51,21 @@ CREATE TABLE `timeline` (
                             `user_id` BIGINT NOT NULL COMMENT '所属用户ID',
                             `title` VARCHAR(64) NOT NULL COMMENT '时间轴标题，例如“孩子成长”、“恋爱历程”',
                             `description` TEXT COMMENT '时间轴简介或备注',
+                            `tag` VARCHAR(255) DEFAULT NULL COMMENT '事件分类',
                             `cover_url` VARCHAR(255) DEFAULT NULL COMMENT '封面图URL（用于首页展示）',
                             `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                             `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-                            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+                            FOREIGN KEY (`user_id`) REFERENCES `user_profile`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='时间轴表';
 
 -- 事件表：记录某个时间轴中的具体事件，支持纯文本或富文本内容
 CREATE TABLE `event` (
                          `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '事件ID',
                          `timeline_id` BIGINT NOT NULL COMMENT '所属时间轴ID',
+                         `title` VARCHAR(255) NOT NULL COMMENT '事件标题',
                          `content` LONGTEXT COMMENT '事件内容，支持富文本或纯文本（HTML 格式）',
-                         `is_rich` TINYINT(1) DEFAULT 0 COMMENT '是否富文本：0=否，1=是',
+                         `tag` VARCHAR(255) DEFAULT NULL COMMENT '事件分类',
+                         `location` VARCHAR(255) DEFAULT NULL COMMENT '事件地点',
                          `event_time` DATETIME NOT NULL COMMENT '事件发生时间',
                          `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
                          `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',

@@ -1,9 +1,17 @@
 package com.shemuel.timeline.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shemuel.timeline.dto.EventDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.util.CollectionUtils;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import com.shemuel.timeline.entity.Event;
 import com.shemuel.timeline.service.EventService;
@@ -36,7 +44,7 @@ public class EventController {
 
     @PostMapping("/add")
     @Operation(summary = "添加时间轴事件表")
-    public RestResult<Object> add(@RequestBody Event event) {
+    public RestResult<Event> add(@RequestBody @Validated Event event) {
         return RestResult.success(eventService.insert(event));
     }
 

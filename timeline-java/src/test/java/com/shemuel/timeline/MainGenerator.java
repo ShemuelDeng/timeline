@@ -35,7 +35,7 @@ public class MainGenerator {
 
     @Test
     public void generate() {
-        doGenerate("timeline","event");
+        doGenerate("event");
     }
 
     private void doGenerate(String... tableNames) {

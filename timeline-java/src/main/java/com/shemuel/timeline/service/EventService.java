@@ -22,7 +22,7 @@ public interface EventService extends IService<Event> {
     /**
      * 新增时间轴事件表
      */
-    boolean insert(Event event);
+    Event insert(Event event);
 
     /**
      * 修改时间轴事件表

@@ -36,7 +36,7 @@ public class TimelineController {
 
     @PostMapping("/add")
     @Operation(summary = "添加时间轴表")
-    public RestResult<Object> add(@RequestBody Timeline timeline) {
+    public RestResult<Timeline> add(@RequestBody Timeline timeline) {
         return RestResult.success(timelineService.insert(timeline));
     }
 

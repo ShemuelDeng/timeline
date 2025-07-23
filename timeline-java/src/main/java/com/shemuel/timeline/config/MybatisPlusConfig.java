@@ -2,6 +2,7 @@ package com.shemuel.timeline.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
 import com.shemuel.timeline.tools.mp.CustomUserIsolationHandler;
 import org.mybatis.spring.annotation.MapperScan;
@@ -25,6 +26,7 @@ public class MybatisPlusConfig {
         TenantLineInnerInterceptor tenantInterceptor = new TenantLineInnerInterceptor();
         tenantInterceptor.setTenantLineHandler(customUserIsolationHandler);
         interceptor.addInnerInterceptor(tenantInterceptor);
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         return interceptor;
     }
 }

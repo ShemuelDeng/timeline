@@ -28,6 +28,9 @@ public class Timeline implements Serializable {
     @Schema(description = "时间轴简介或备注")
     private String description;
 
+    @Schema(description = "事件分类")
+    private String tag;
+
     @Schema(description = "封面图URL（用于首页展示）")
     private String coverUrl;
 
