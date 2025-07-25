@@ -2,7 +2,7 @@
   <view class="timeline-page">
     <view class="header">
       <text class="main-title">时光轴</text>
-      <text class="sub-title">记录生活中的每一个重要时刻</text>
+      <text class="sub-title">每一次的记录都是珍贵的</text>
       <button class="create-btn" @click="showCreateModal">+ 创建新时光轴</button>
     </view>
     <view class="timeline-list">
@@ -71,14 +71,42 @@
         </view>
       </view>
     </view>
+    
+    <!-- 授权弹窗 -->
+    <view class="auth-modal" v-if="showAuthModal">
+      <view class="auth-mask" @click="hideAuthPopup"></view>
+      <view class="auth-content">
+        <view class="auth-header">
+          <text class="auth-title">授权登录</text>
+        </view>
+        <view class="auth-body">
+          <view class="auth-avatar">
+            <image src="/static/avatar.svg" mode="aspectFill"></image>
+          </view>
+          <view class="auth-info">
+            <view class="auth-name">时光轴</view>
+            <view class="auth-desc">申请获取您的公开信息（昵称、头像等）</view>
+          </view>
+          <view class="auth-actions">
+            <button class="auth-cancel" @click="hideAuthPopup">取消</button>
+            <button class="auth-confirm" @click="handleAuth">确认授权</button>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script>
+import { timelineAPI, authAPI } from '@/utils/api.js';
+
 export default {
   data() {
     return {
       showModal: false,
+      showAuthModal: false, // 是否显示授权弹窗
+      isLoggedIn: false, // 是否已登录
+      userInfo: null, // 用户信息
       newTimeline: {
         title: '',
         desc: '',
@@ -90,52 +118,111 @@ export default {
       categories: ['其他', '家庭', '工作', '学习', '旅行', '情感'],
       bgImageIndex: 0,
       bgImageOptions: ['无背景图片', '自定义图片链接'],
-      timelines: [
-        {
-          id: 1,
-          icon: '🏠',
-          title: '宝宝成长记录',
-          desc: '记录宝宝成长的每一个重要时刻',
-          tag: '家庭',
-          date: '2024/1/1',
-          count: 4,
-          color: '#F9C7D1',
-          bgColor: '#F9C7D1',
-        },
-        {
-          id: 2,
-          icon: '❤️',
-          title: '恋爱时光',
-          desc: '记录我们美好的恋爱历程',
-          tag: '情感',
-          date: '2023/6/1',
-          count: 4,
-          color: '#F9C7D1',
-          bgColor: '#F9C7D1',
-        },
-        {
-          id: 3,
-          icon: '🎓',
-          title: '学习编程之路',
-          desc: '记录我的编程学习历程',
-          tag: '学习',
-          date: '2023/1/1',
-          count: 3,
-          color: '#C7D6F9',
-          bgColor: '#C7D6F9',
-        },
-      ],
+      timelines: [],
+      loading: false,
+    }
+  },
+  onLoad() {
+    // 检查登录状态
+    const token = uni.getStorageSync('token');
+    console.log("token", token)
+    if (token) {
+      this.isLoggedIn = true;
+      this.userInfo = uni.getStorageSync('userInfo') || null;
+      this.fetchTimelineList();
+    } else {
+      // 显示授权弹窗
+      setTimeout(() => {
+        this.showAuthModal = true;
+      }, 500);
     }
   },
   methods: {
+    // 获取时间轴列表
+    fetchTimelineList() {
+      this.loading = true;
+      uni.showLoading({
+        title: '加载中...'
+      });
+      
+      timelineAPI.getTimelineList()
+        .then(res => {
+          if (res.code === 200) {
+            // 处理返回的数据
+            this.timelines = res.data.records.map(item => ({
+              id: item.id,
+              icon: this.getIconByTag(item.tag),
+              title: item.title,
+              desc: item.description || '暂无描述',
+              tag: item.tag,
+              date: this.formatDate(item.createTime),
+              count: item.eventCount || 0,
+              color: this.getColorByTag(item.tag),
+              bgColor: this.getColorByTag(item.tag),
+            }));
+          } else {
+            uni.showToast({
+              title: res.message || '获取时间轴列表失败',
+              icon: 'none'
+            });
+          }
+        })
+        .catch(err => {
+          console.error('获取时间轴列表失败:', err);
+          uni.showToast({
+            title: '获取时间轴列表失败',
+            icon: 'none'
+          });
+        })
+        .finally(() => {
+          this.loading = false;
+          uni.hideLoading();
+        });
+    },
+    
+    // 根据标签获取图标
+    getIconByTag(tag) {
+      const iconMap = {
+        '家庭': '🏠',
+        '工作': '💼',
+        '学习': '🎓',
+        '旅行': '✈️',
+        '情感': '❤️',
+        '其他': '📝'
+      };
+      return iconMap[tag] || '📝';
+    },
+    
+    // 根据标签获取颜色
+    getColorByTag(tag) {
+      const colorMap = {
+        '家庭': '#F9C7D1',
+        '工作': '#A1C4FD',
+        '学习': '#C7D6F9',
+        '旅行': '#C2E9FB',
+        '情感': '#FFCAC9',
+        '其他': '#338aff'
+      };
+      return colorMap[tag] || '#338aff';
+    },
+    
+    // 格式化日期
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+    },
+    
     goDetail(item) {
       uni.navigateTo({
         url: `/pages/timeline-detail/timeline-detail?id=${item.id}`
       })
     },
+    
     showCreateModal() {
       this.showModal = true;
     },
+    
     hideCreateModal() {
       this.showModal = false;
       // 重置表单
@@ -149,15 +236,84 @@ export default {
       this.categoryIndex = 0;
       this.bgImageIndex = 0;
     },
+    
     categoryChange(e) {
       this.categoryIndex = e.detail.value;
       this.newTimeline.category = this.categories[this.categoryIndex];
     },
+    
     bgImageChange(e) {
       this.bgImageIndex = e.detail.value;
       this.newTimeline.bgImage = this.bgImageOptions[this.bgImageIndex];
     },
+    
+    // 显示授权弹窗
+    showAuthPopup() {
+      this.showAuthModal = true;
+    },
+    
+    // 隐藏授权弹窗
+    hideAuthPopup() {
+      this.showAuthModal = false;
+    },
+    
+    // 处理授权
+    handleAuth() {
+      uni.showLoading({
+        title: '登录中...'
+      });
+      
+      // 调用登录接口
+      authAPI.login()
+        .then(res => {
+          if (res.code === 200) {
+            // 登录成功
+            this.isLoggedIn = true;
+            this.userInfo = res.data.userInfo || {
+               nickname: 'shemuel',
+               avatar: '/static/avatar.svg'
+             };
+            
+            // 保存登录状态和用户信息
+             uni.setStorageSync('token', res.data.tokenValue || 'mock-token');
+             uni.setStorageSync('userInfo', this.userInfo);
+            
+            // 隐藏授权弹窗
+            this.hideAuthPopup();
+            
+            // 获取时间轴列表
+            this.fetchTimelineList();
+            
+            uni.showToast({
+              title: '登录成功',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: res.message || '登录失败',
+              icon: 'none'
+            });
+          }
+        })
+        .catch(err => {
+          console.error('登录失败:', err);
+          uni.showToast({
+            title: '登录失败',
+            icon: 'none'
+          });
+        })
+        .finally(() => {
+          uni.hideLoading();
+        });
+    },
+    
     createTimeline() {
+      // 检查登录状态
+      if (!this.isLoggedIn) {
+        this.showAuthPopup();
+        return;
+      }
+      
       // 表单验证
       if (!this.newTimeline.title) {
         uni.showToast({
@@ -167,27 +323,48 @@ export default {
         return;
       }
       
-      // 创建新时光轴
-      const newId = this.timelines.length > 0 ? Math.max(...this.timelines.map(t => t.id)) + 1 : 1;
-      const newTimeline = {
-        id: newId,
-        icon: '📝',
+      // 显示加载中
+      uni.showLoading({
+        title: '创建中...'
+      });
+      
+      // 准备请求数据
+      const data = {
         title: this.newTimeline.title,
-        desc: this.newTimeline.desc || '暂无描述',
+        description: this.newTimeline.desc || '',
         tag: this.newTimeline.category,
-        date: new Date().toLocaleDateString().replace(/\//g, '/'),
-        count: 0,
-        color: '#338aff',
-        bgColor: '#338aff',
+        coverUrl: this.bgImageIndex === 1 ? this.newTimeline.bgImageUrl : ''
       };
       
-      this.timelines.push(newTimeline);
-      this.hideCreateModal();
-      
-      uni.showToast({
-        title: '创建成功',
-        icon: 'success'
-      });
+      // 调用API创建时间轴
+      timelineAPI.addTimeline(data)
+        .then(res => {
+          if (res.code === 200) {
+            // 创建成功，刷新列表
+            this.hideCreateModal();
+            this.fetchTimelineList();
+            
+            uni.showToast({
+              title: '创建成功',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: res.message || '创建失败',
+              icon: 'none'
+            });
+          }
+        })
+        .catch(err => {
+          console.error('创建时间轴失败:', err);
+          uni.showToast({
+            title: '创建失败',
+            icon: 'none'
+          });
+        })
+        .finally(() => {
+          uni.hideLoading();
+        });
     }
   }
 }
@@ -411,6 +588,119 @@ export default {
 }
 
 .btn-create {
+  background: #338aff;
+  color: #fff;
+}
+
+/* 授权弹窗样式 */
+.auth-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.auth-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.auth-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  overflow: hidden;
+  box-shadow: 0 -4rpx 24rpx 0 rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.auth-header {
+  padding: 30rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.auth-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #222;
+  text-align: center;
+  display: block;
+}
+
+.auth-body {
+  padding: 40rpx 30rpx;
+}
+
+.auth-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  margin: 0 auto 30rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1rpx solid #eee;
+}
+
+.auth-avatar image {
+  width: 100%;
+  height: 100%;
+}
+
+.auth-info {
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.auth-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 12rpx;
+}
+
+.auth-desc {
+  font-size: 26rpx;
+  color: #6b7a8f;
+}
+
+.auth-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40rpx;
+}
+
+.auth-cancel, .auth-confirm {
+  width: 45%;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+}
+
+.auth-cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.auth-confirm {
   background: #338aff;
   color: #fff;
 }

@@ -63,69 +63,91 @@
       </view>
     </scroll-view>
     <!-- 添加事件弹框 -->
-    <view class="modal" v-if="showModal">
-      <view class="modal-mask" @click="hideAddEventModal"></view>
-      <view class="modal-content">
-        <view class="modal-header">
-          <text class="modal-title">添加新事件</text>
-          <text class="modal-close" @click="hideAddEventModal">×</text>
+    <u-popup :show="showModal" mode="center" round="16" :closeable="true" @close="hideAddEventModal" :z-index="10">
+      <view class="popup-content">
+        <view class="popup-title">添加新事件</view>
+        <view class="form-container">
+          <u-form :model="newEvent" ref="uForm" label-position="top" label-width="auto">
+            <u-form-item label="事件标题" prop="title">
+              <u-input v-model="newEvent.title" placeholder="例如：百天" border="bottom" />
+            </u-form-item>
+            <u-form-item label="描述" prop="desc">
+              <u-textarea v-model="newEvent.desc" placeholder="简单描述这个事件的内容" height="160" />
+            </u-form-item>
+            <u-form-item label="日期" prop="date">
+              <u-datetime-picker
+                v-model="newEvent.date"
+                mode="date"
+                :show-toolbar="true"
+                @confirm="dateConfirm"
+              >
+                <u-input
+                  slot="trigger"
+                  v-model="newEvent.date"
+                  disabled
+                  placeholder="请选择日期"
+                  suffixIcon="calendar"
+                  border="bottom"
+                />
+              </u-datetime-picker>
+            </u-form-item>
+            <u-form-item label="地点" prop="place">
+              <u-input v-model="newEvent.place" placeholder="例如：上海市人民公园" border="bottom" />
+            </u-form-item>
+            <u-form-item label="分类标签" prop="tag">
+              <u-picker
+                :show="showTagPicker"
+                :columns="[tags]"
+                @confirm="tagConfirm"
+                @cancel="showTagPicker = false"
+                keyName="text"
+              ></u-picker>
+              <u-input
+                v-model="newEvent.tag"
+                disabled
+                placeholder="请选择标签"
+                suffixIcon="arrow-right"
+                border="bottom"
+                @click="showTagPicker = true"
+              />
+            </u-form-item>
+            <u-form-item label="图片 (可选)">
+              <view class="upload-area" @click="addImage">
+                <u-icon name="plus" size="40" color="#ccc"></u-icon>
+                <text class="upload-text">点击图片区域上传</text>
+              </view>
+              <view class="image-preview" v-if="newEvent.images.length > 0">
+                <view class="image-item" v-for="(img, index) in newEvent.images" :key="index">
+                  <image :src="img" mode="aspectFill" class="preview-img" />
+                  <view class="delete-icon" @click.stop="removeImage(index)">
+                    <u-icon name="close" size="20" color="#fff"></u-icon>
+                  </view>
+                </view>
+              </view>
+            </u-form-item>
+          </u-form>
         </view>
-        <view class="modal-body">
-          <view class="form-item">
-            <text class="form-label">事件标题</text>
-            <input class="form-input" type="text" v-model="newEvent.title" placeholder="例如：百天" />
-          </view>
-          <view class="form-item">
-            <text class="form-label">描述</text>
-            <textarea class="form-textarea" v-model="newEvent.desc" placeholder="简单描述这个事件的内容" />
-          </view>
-          <view class="form-item">
-            <text class="form-label">日期</text>
-            <view class="form-date-picker">
-              <picker mode="date" :value="newEvent.date" @change="dateChange">
-                <view class="picker-value">{{ newEvent.date }}</view>
-              </picker>
-            </view>
-          </view>
-          <view class="form-item">
-            <text class="form-label">地点</text>
-            <input class="form-input" type="text" v-model="newEvent.place" placeholder="例如：上海市人民公园" />
-          </view>
-          <view class="form-item">
-            <text class="form-label">分类标签</text>
-            <view class="form-select">
-              <picker @change="tagChange" :value="tagIndex" :range="tags">
-                <view class="picker-value">{{ tags[tagIndex] }}</view>
-              </picker>
-            </view>
-          </view>
-          <view class="form-item">
-            <text class="form-label">图片 (可选)</text>
-            <view class="upload-area" @click="addImage">
-              <view class="upload-icon">+</view>
-              <text class="upload-text">点击图片区域上传</text>
-            </view>
-            <view class="image-url-input" v-if="showImageUrlInput">
-              <input class="form-input" type="text" v-model="newEvent.imageUrl" placeholder="https://example.com/image.jpg" />
-              <button class="btn-add-url" @click="addImageUrl">添加</button>
-            </view>
-          </view>
-          <view class="form-actions">
-            <button class="btn-cancel" @click="hideAddEventModal">取消</button>
-            <button class="btn-create" @click="createEvent">添加</button>
-          </view>
+        <view class="form-actions">
+          <u-button type="info" text="取消" plain shape="circle" @click="hideAddEventModal"></u-button>
+          <u-button type="primary" text="添加" shape="circle" @click="createEvent"></u-button>
         </view>
       </view>
-    </view>
+    </u-popup>
+    
+
   </view>
 </template>
 
 <script>
+import { eventAPI, fileAPI, API_BASE_URL } from '../../utils/api.js';
+
 export default {
   data() {
     return {
+      timelineId: null,
+      loading: false,
       showModal: false,
-      showImageUrlInput: false,
+      showTagPicker: false,
       newEvent: {
         title: '',
         desc: '',
@@ -136,53 +158,23 @@ export default {
         imageUrl: ''
       },
       tagIndex: 0,
-      tags: ['重要时刻', '里程碑', '成长', '学习', '游玩' ,'随笔','灵感', '其他'],
-      timeline: {
-        title: '宝宝成长记录',
-        desc: '记录宝宝成长的每一个重要时刻',
-      },
-      events: [
-        {
-          id: 1,
-          title: '百天',
-          date: '2024年4月24日',
-          timeAgo: '1年前',
-          place: '儿童摄影工作室',
-          desc: '宝宝百天快乐！拍了很多漂亮的照片',
-          tags: ['重要时刻'],
-          images: [
-            'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg',
-            'https://images.pexels.com/photos/325690/pexels-photo-325690.jpeg',
-            'https://images.pexels.com/photos/459976/pexels-photo-459976.jpeg',
-          ],
-        },
-        {
-          id: 2,
-          title: '第一次笑',
-          date: '2024年2月28日',
-          timeAgo: '1年前',
-          place: '客厅沙发上',
-          desc: '宝宝第一次对我们笑了，太治愈了',
-          tags: ['成长里程碑'],
-          images: [],
-        },
-        {
-          id: 3,
-          title: '进园',
-          date: '2024年3月10日',
-          timeAgo: '1年前',
-          place: '幼儿园门口',
-          desc: '宝宝第一次上幼儿园，勇敢又开心',
-          tags: ['成长'],
-          images: [
-            'https://images.pexels.com/photos/3661350/pexels-photo-3661350.jpeg',
-            'https://images.pexels.com/photos/1648376/pexels-photo-1648376.jpeg',
-            'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg',
-            'https://images.pexels.com/photos/35537/child-children-girl-happy.jpg',
-          ],
-        },
+      tags: [
+        { text: '重要时刻', value: '重要时刻' },
+        { text: '里程碑', value: '里程碑' },
+        { text: '成长', value: '成长' },
+        { text: '学习', value: '学习' },
+        { text: '游玩', value: '游玩' },
+        { text: '随笔', value: '随笔' },
+        { text: '灵感', value: '灵感' },
+        { text: '其他', value: '其他' }
       ],
-      sortAscending: true, // 默认正序排列（从早到晚）
+      timeline: {
+        id: null,
+        title: '',
+        desc: ''
+      },
+      events: [],
+      sortAscending: true // 默认正序排列（从早到晚）
     }
   },
   computed: {
@@ -209,9 +201,85 @@ export default {
     }
   },
   methods: {
+    // 获取时间轴下的事件列表
+    fetchEventList(timelineId) {
+      this.loading = true;
+      uni.showLoading({
+        title: '加载中...'
+      });
+      
+      eventAPI.getEventList(timelineId)
+        .then(res => {
+          if (res.code === 200) {
+            // 设置时间轴信息
+            if (res.data && res.data.timeline) {
+              this.timeline = {
+                id: res.data.timeline.id,
+                title: res.data.timeline.title,
+                desc: res.data.timeline.description || ''
+              };
+            }
+            
+            // 处理事件列表数据
+            if (res.data && res.data.page.records) {
+              this.events = res.data.page.records.map(item => {
+                // 计算时间差
+                const eventDate = new Date(item.eventTime);
+                const now = new Date();
+                const diffYears = now.getFullYear() - eventDate.getFullYear();
+                const diffMonths = now.getMonth() - eventDate.getMonth();
+                const diffDays = now.getDate() - eventDate.getDate();
+                
+                let timeAgo = '';
+                if (diffYears > 0) {
+                  timeAgo = `${diffYears}年前`;
+                } else if (diffMonths > 0) {
+                  timeAgo = `${diffMonths}个月前`;
+                } else if (diffDays > 0) {
+                  timeAgo = `${diffDays}天前`;
+                } else {
+                  timeAgo = '今天';
+                }
+                
+                // 格式化日期为中文格式
+                const formattedDate = `${eventDate.getFullYear()}年${eventDate.getMonth() + 1}月${eventDate.getDate()}日`;
+                
+                return {
+                  id: item.id,
+                  title: item.title,
+                  date: formattedDate,
+                  timeAgo: timeAgo,
+                  place: item.location || '未知地点',
+                  desc: item.content || '暂无描述',
+                  tags: item.tag ? [item.tag] : ['其他'],
+                  images: item.images || []
+                };
+              });
+            }
+          } else {
+            uni.showToast({
+              title: res.message || '获取事件列表失败',
+              icon: 'none'
+            });
+          }
+        })
+        .catch(err => {
+          console.error('获取事件列表失败:', err);
+          uni.showToast({
+            title: '获取事件列表失败',
+            icon: 'none'
+          });
+        })
+        .finally(() => {
+          this.loading = false;
+          uni.hideLoading();
+        });
+    },
+    
     goBack() {
       uni.navigateBack()
     },
+    
     getImageRows(images) {
       // 最多9张，3*3排布
       const rows = []
@@ -220,10 +288,12 @@ export default {
       }
       return rows
     },
+    
     toggleSortOrder() {
       // 切换排序顺序
       this.sortAscending = !this.sortAscending
     },
+    
     formatDate(date) {
       const year = date.getFullYear();
       const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -248,38 +318,92 @@ export default {
         imageUrl: ''
       };
       this.tagIndex = 0;
-      this.showImageUrlInput = false;
+      this.showTagPicker = false;
+      
+      // 如果有表单校验，重置表单校验状态
+      if (this.$refs.uForm) {
+        this.$refs.uForm.resetFields();
+      }
     },
     
-    dateChange(e) {
-      this.newEvent.date = e.detail.value;
+    dateConfirm(e) {
+      // u-datetime-picker的确认事件
+      this.newEvent.date = this.formatDate(new Date(e));
     },
     
-    tagChange(e) {
-      this.tagIndex = e.detail.value;
-      this.newEvent.tag = this.tags[this.tagIndex];
+    tagConfirm(e) {
+      // u-picker的确认事件
+      this.showTagPicker = false;
+      this.newEvent.tag = e[0].value;
     },
     
     addImage() {
-      // 显示输入图片URL的输入框
-      this.showImageUrlInput = true;
+      // 显示操作菜单，选择图片来源
+      uni.showActionSheet({
+        itemList: ['从相册选择', '拍照'],
+        popover: {
+          // 设置更高的z-index，确保在弹窗上方显示
+          style: { zIndex: 999 }
+        },
+        success: (res) => {
+          // 从相册选择或拍照
+          uni.chooseImage({
+            count: 9 - this.newEvent.images.length, // 最多可选择的图片数量
+            sizeType: ['compressed'], // 压缩图
+            sourceType: res.tapIndex === 0 ? ['album'] : ['camera'],
+            success: (res) => {
+              // 显示上传中提示
+              uni.showLoading({
+                title: '上传中...'
+              });
+              
+              // 循环上传图片到后端
+              const tempFilePaths = res.tempFilePaths;
+              const uploadPromises = tempFilePaths.map(filePath => {
+                return fileAPI.uploadFile(filePath)
+                  .then(fileUrl => {
+                    // 上传成功，返回文件URL
+                    return fileUrl;
+                  })
+                  .catch(err => {
+                    throw new Error(err.message || '上传失败');
+                  });
+              });
+              
+              // 处理所有上传结果
+              Promise.all(uploadPromises)
+                .then(filePaths => {
+                  // 将上传成功的文件路径添加到图片数组
+                  this.newEvent.images = [...this.newEvent.images, ...filePaths];
+                  uni.hideLoading();
+                  uni.showToast({
+                    title: '图片上传成功',
+                    icon: 'success'
+                  });
+                })
+                .catch(err => {
+                  console.error('图片上传失败:', err);
+                  uni.hideLoading();
+                  uni.showToast({
+                    title: '图片上传失败',
+                    icon: 'none'
+                  });
+                });
+            }
+          });
+        }
+      });
     },
     
-    addImageUrl() {
-      if (this.newEvent.imageUrl) {
-        // 添加图片URL到图片数组
-        this.newEvent.images.push(this.newEvent.imageUrl);
-        this.newEvent.imageUrl = '';
-        uni.showToast({
-          title: '图片添加成功',
-          icon: 'success'
-        });
-      } else {
-        uni.showToast({
-          title: '请输入图片URL',
-          icon: 'none'
-        });
-      }
+
+    
+    // 删除图片
+    removeImage(index) {
+      this.newEvent.images.splice(index, 1);
+      uni.showToast({
+        title: '已删除',
+        icon: 'none'
+      });
     },
     
     createEvent() {
@@ -300,56 +424,53 @@ export default {
         return;
       }
       
-      if (!this.newEvent.place) {
-        uni.showToast({
-          title: '请输入地点',
-          icon: 'none'
-        });
-        return;
-      }
       
-      // 创建新事件
-      const newId = this.events.length > 0 ? Math.max(...this.events.map(e => e.id)) + 1 : 1;
+      // 显示加载中
+      uni.showLoading({
+        title: '创建中...'
+      });
       
-      // 计算时间差
-      const eventDate = new Date(this.newEvent.date.replace(/\//g, '-'));
-      const now = new Date();
-      const diffYears = now.getFullYear() - eventDate.getFullYear();
-      const diffMonths = now.getMonth() - eventDate.getMonth();
-      const diffDays = now.getDate() - eventDate.getDate();
-      
-      let timeAgo = '';
-      if (diffYears > 0) {
-        timeAgo = `${diffYears}年前`;
-      } else if (diffMonths > 0) {
-        timeAgo = `${diffMonths}个月前`;
-      } else if (diffDays > 0) {
-        timeAgo = `${diffDays}天前`;
-      } else {
-        timeAgo = '今天';
-      }
-      
-      // 格式化日期为中文格式
-      const formattedDate = `${eventDate.getFullYear()}年${eventDate.getMonth() + 1}月${eventDate.getDate()}日`;
-      
-      const newEvent = {
-        id: newId,
+      // 准备请求数据
+      const data = {
+        timelineId: this.timelineId,
         title: this.newEvent.title,
-        date: formattedDate,
-        timeAgo: timeAgo,
-        place: this.newEvent.place,
-        desc: this.newEvent.desc || '暂无描述',
-        tags: [this.newEvent.tag],
-        images: this.newEvent.images
+        content: this.newEvent.desc || '',
+        isRich: 1,
+        tag: this.newEvent.tag,
+        location: this.newEvent.place,
+        images: this.newEvent.images,
+        eventTime: this.newEvent.date.replace(/\//g, '-') + ' 00:00:00'
       };
       
-      this.events.push(newEvent);
-      this.hideAddEventModal();
-      
-      uni.showToast({
-        title: '添加成功',
-        icon: 'success'
-      });
+      // 调用API创建事件
+      eventAPI.addEvent(data)
+        .then(res => {
+          if (res.code === 200) {
+            // 创建成功，刷新列表
+            this.hideAddEventModal();
+            this.fetchEventList(this.timelineId);
+            
+            uni.showToast({
+              title: '添加成功',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: res.message || '创建失败',
+              icon: 'none'
+            });
+          }
+        })
+        .catch(err => {
+          console.error('创建事件失败:', err);
+          uni.showToast({
+            title: '创建失败',
+            icon: 'none'
+          });
+        })
+        .finally(() => {
+          uni.hideLoading();
+        });
     },
     
     // 编辑事件
@@ -383,7 +504,18 @@ export default {
     }
   },
   onLoad(options) {
-    // 可根据 options.id 拉取 timeline 详情和事件
+    if (options && options.id) {
+      this.timelineId = options.id;
+      this.fetchEventList(this.timelineId);
+    } else {
+      uni.showToast({
+        title: '缺少时间轴ID',
+        icon: 'none'
+      });
+      setTimeout(() => {
+        uni.navigateBack();
+      }, 1500);
+    }
   },
 }
 </script>
@@ -593,100 +725,27 @@ export default {
   vertical-align: middle;
 }
 /* 弹框样式 */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-}
-
-.modal-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
-  max-width: 600rpx;
+.popup-content {
+  width: 650rpx;
+  padding: 30rpx;
+  box-sizing: border-box;
   max-height: 80vh;
-  background: #fff;
-  border-radius: 24rpx;
-  overflow: hidden;
-  box-shadow: 0 4rpx 24rpx 0 rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
 }
 
-.modal-header {
-  position: relative;
-  padding: 30rpx;
-  border-bottom: 1rpx solid #eee;
+.form-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 20rpx;
 }
 
-.modal-title {
+.popup-title {
   font-size: 32rpx;
   font-weight: 600;
   color: #222;
   text-align: center;
-  display: block;
-}
-
-.modal-close {
-  position: absolute;
-  right: 30rpx;
-  top: 30rpx;
-  font-size: 40rpx;
-  color: #999;
-  line-height: 1;
-}
-
-.modal-body {
-  padding: 30rpx;
-  overflow-y: auto;
-}
-
-.form-item {
-  margin-bottom: 24rpx;
-}
-
-.form-label {
-  display: block;
-  font-size: 28rpx;
-  color: #333;
-  margin-bottom: 12rpx;
-}
-
-.form-input, .form-textarea, .form-select, .form-date-picker {
-  width: 100%;
-  height: 80rpx;
-  border: 1rpx solid #ddd;
-  border-radius: 8rpx;
-  padding: 0 20rpx;
-  font-size: 28rpx;
-  color: #333;
-  box-sizing: border-box;
-  background: #f9f9f9;
-}
-
-.form-textarea {
-  height: 160rpx;
-  padding: 20rpx;
-  line-height: 1.5;
-}
-
-.picker-value {
-  height: 80rpx;
-  line-height: 80rpx;
+  margin-bottom: 30rpx;
 }
 
 .upload-area {
@@ -699,59 +758,75 @@ export default {
   align-items: center;
   justify-content: center;
   background: #f9f9f9;
-}
-
-.upload-icon {
-  font-size: 60rpx;
-  color: #ccc;
-  margin-bottom: 10rpx;
+  margin-bottom: 20rpx;
 }
 
 .upload-text {
   font-size: 24rpx;
   color: #999;
+  margin-top: 10rpx;
 }
 
-.image-url-input {
-  margin-top: 16rpx;
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 20rpx;
+}
+
+.image-item {
+  width: 180rpx;
+  height: 180rpx;
+  margin-right: 15rpx;
+  margin-bottom: 15rpx;
+  position: relative;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.image-item:nth-child(3n) {
+  margin-right: 0;
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.delete-icon {
+  position: absolute;
+  top: 5rpx;
+  right: 5rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
   display: flex;
   align-items: center;
-}
-
-.btn-add-url {
-  width: 120rpx;
-  height: 80rpx;
-  line-height: 80rpx;
-  text-align: center;
-  background: #338aff;
-  color: #fff;
-  font-size: 24rpx;
-  border-radius: 8rpx;
-  margin-left: 16rpx;
+  justify-content: center;
 }
 
 .form-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 40rpx;
+  margin-top: 30rpx;
+  width: 100%;
+  padding-bottom: 10rpx;
 }
 
-.btn-cancel, .btn-create {
-  width: 45%;
-  height: 80rpx;
-  line-height: 80rpx;
-  text-align: center;
-  border-radius: 40rpx;
-  font-size: 28rpx;
+/* 图片URL输入弹窗样式 */
+.url-popup-content {
+  width: 600rpx;
+  padding: 30rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-.btn-cancel {
-  background: #f5f5f5;
-  color: #666;
-}
-
-.btn-create {
-  background: #338aff;
-  color: #fff;
+.url-popup-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30rpx;
+  width: 100%;
 }
 </style>

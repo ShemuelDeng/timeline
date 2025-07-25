@@ -34,9 +34,14 @@ public class Timeline implements Serializable {
     @Schema(description = "封面图URL（用于首页展示）")
     private String coverUrl;
 
+    @Schema(description = "事件数量")
+    private Integer eventCount;
+
     @Schema(description = "创建时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
     @Schema(description = "最后更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 }

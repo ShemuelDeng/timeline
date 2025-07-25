@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shemuel.timeline.entity.Timeline;
+import com.shemuel.timeline.service.TimelineService;
 import org.springframework.stereotype.Service;
 import com.shemuel.timeline.mapper.EventMapper;
 import com.shemuel.timeline.entity.Event;
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl extends ServiceImpl<EventMapper, Event> implements EventService {
+
+    private final TimelineService timelineService;
 
     /**
      * 查询时间轴事件表分页列表
@@ -59,7 +63,19 @@ public class EventServiceImpl extends ServiceImpl<EventMapper, Event> implements
             event.setEventTime(LocalDateTime.now());
         }
         save(event);
-        return getById(event.getId());
+        Event result = getById(event.getId());
+
+        Event eventQuery = new Event();
+        eventQuery.setTimelineId(event.getTimelineId());
+        List<Event> events = selectList(eventQuery);
+
+        Timeline timeline   = new Timeline();
+        timeline.setId(event.getTimelineId());
+        timeline.setEventCount(events.size());
+        // 更新时间轴数量
+        timelineService.updateById(timeline);
+
+        return result;
     }
 
     /**

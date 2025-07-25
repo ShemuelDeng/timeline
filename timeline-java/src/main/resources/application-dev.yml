@@ -100,8 +100,16 @@ dromara:
     qiniu-kodo:
       - platform: qiniu-kodo-1 # 存储平台标识
         enable-storage: true  # 启用存储
-        access-key:
-        secret-key:
+        access-key: XdijsGarBedV5tuvnTncaqy01GXddC2l6HIbakpH
+        secret-key: keAI0PBJ3S2xFLPmypEZ6HtjssoMe3fN5D1SZZLq
         bucket-name: shemuel
-        domain: shemuel.s3.cn-east-1.qiniucs.com/ # 访问域名，注意“/”结尾，例如：http://abc.hn-bkt.clouddn.com/
+        domain: https://shemuel.s3.cn-east-1.qiniucs.com/ # 访问域名，注意“/”结尾，例如：http://abc.hn-bkt.clouddn.com/
         base-path: base/ # 基础路径
+
+s3:
+  accessKey: XdijsGarBedV5tuvnTncaqy01GXddC2l6HIbakpH
+  secretKey: keAI0PBJ3S2xFLPmypEZ6HtjssoMe3fN5D1SZZLq
+  bucketName: shemuel
+  endpoint: https://s3.cn-east-1.qiniucs.com/
+  region: cn-east-1
+  base-path: base/timeline/

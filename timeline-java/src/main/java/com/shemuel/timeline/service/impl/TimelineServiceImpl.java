@@ -59,6 +59,7 @@ public class TimelineServiceImpl extends ServiceImpl<TimelineMapper, Timeline> i
      */
     @Override
     public Timeline insert(Timeline timeline) {
+        timeline.setEventCount(0);
         save(timeline);
         return getById(timeline.getId());
     }
