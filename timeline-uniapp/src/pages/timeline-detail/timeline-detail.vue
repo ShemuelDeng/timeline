@@ -139,7 +139,18 @@
       <view class="image-preview-container">
         <swiper class="preview-swiper" :current="currentImageIndex" @change="handleSwiperChange">
           <swiper-item v-for="(img, index) in previewImages" :key="index">
-            <image :src="img" mode="aspectFit" class="preview-swiper-img" />
+            <movable-area class="movable-area">
+              <movable-view class="movable-view" 
+                direction="all" 
+                :scale="true" 
+                :scale-min="1" 
+                :scale-max="4" 
+                :scale-value="imageScale" 
+                @scale="onImageScale"
+                @change="onImageMove">
+                <image :src="img" mode="aspectFit" class="preview-swiper-img" @doubletap="resetImageScale" />
+              </movable-view>
+            </movable-area>
           </swiper-item>
         </swiper>
         <view class="preview-indicator">{{ currentImageIndex + 1 }}/{{ previewImages.length }}</view>
@@ -166,6 +177,7 @@ export default {
         place: '',
         tag: '重要时刻',
         images: [],
+        imagesFileKeys: [],
         imageUrl: ''
       },
       tagIndex: 0,
@@ -189,7 +201,8 @@ export default {
       // 图片预览相关
       showImagePreview: false,
       previewImages: [],
-      currentImageIndex: 0
+      currentImageIndex: 0,
+      imageScale: 1
     }
   },
   computed: {
@@ -389,7 +402,10 @@ export default {
               Promise.all(uploadPromises)
                 .then(filePaths => {
                   // 将上传成功的文件路径添加到图片数组
-                  this.newEvent.images = [...this.newEvent.images, ...filePaths];
+                  filePaths.forEach(tempFileData => {
+                    this.newEvent.images.push(tempFileData.fileUrl)
+                    this.newEvent.imagesFileKeys.push(tempFileData.filePath)
+                  })
                   uni.hideLoading();
                   uni.showToast({
                     title: '图片上传成功',
@@ -415,6 +431,7 @@ export default {
     // 删除图片
     removeImage(index) {
       this.newEvent.images.splice(index, 1);
+      this.newEvent.imagesFileKeys.splice(index, 1);
       uni.showToast({
         title: '已删除',
         icon: 'none'
@@ -436,6 +453,23 @@ export default {
     // 处理滑动切换
     handleSwiperChange(e) {
       this.currentImageIndex = e.detail.current;
+      // 重置缩放比例
+      this.imageScale = 1;
+    },
+    
+    // 处理图片缩放
+    onImageScale(e) {
+      this.imageScale = e.detail.scale;
+    },
+    
+    // 处理图片移动
+    onImageMove(e) {
+      // 可以在这里处理图片移动的逻辑
+    },
+    
+    // 双击重置缩放
+    resetImageScale() {
+      this.imageScale = 1;
     },
     
     createEvent() {
@@ -470,7 +504,7 @@ export default {
         isRich: 1,
         tag: this.newEvent.tag,
         location: this.newEvent.place,
-        images: this.newEvent.images,
+        images: this.newEvent.imagesFileKeys,
         eventTime: this.newEvent.date.replace(/\//g, '-') + ' 00:00:00'
       };
       
@@ -771,6 +805,18 @@ export default {
 .preview-swiper-img {
   width: 100%;
   height: 100%;
+}
+.movable-area {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.movable-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .preview-indicator {
   position: absolute;
