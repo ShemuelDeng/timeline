@@ -15,6 +15,7 @@ import com.shemuel.timeline.service.TimelineService;
 import com.shemuel.timeline.vo.EventPageVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/event")
 @RequiredArgsConstructor
 @Tag(name = "时间轴事件表管理")
+@Slf4j
 public class EventController {
 
     private final EventService eventService;
@@ -46,13 +48,17 @@ public class EventController {
     public RestResult<EventPageVO<Event>> list(@Validated Event event) {
         // 1. 获取事件分页数据
         IPage<Event> eventPage = eventService.selectPage(event);
-        eventPage.getRecords().stream().peek(e -> {
+        List<Event> newPage = eventPage.getRecords().stream().map(e -> {
             List<String> images = e.getImages();
             List<String> imageUrls = new ArrayList<>();
             images.stream().forEach(key -> {
-                imageUrls.add(s3Service.getFileSignedUrl(key, 3600000));
+                String fileSignedUrl = s3Service.getFileSignedUrl(key, 3600000);
+                imageUrls.add(fileSignedUrl);
             });
-        });
+            e.setImages(imageUrls);
+            return e;
+        }).collect(Collectors.toList());
+        eventPage.setRecords(newPage);
         EventPageVO<Event> result = new EventPageVO<>(eventPage);
         
         // 4. 由于@Validated注解确保只查询归属于一个时间轴的事件，我们只需要查询一次时间轴信息

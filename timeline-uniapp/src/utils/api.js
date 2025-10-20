@@ -98,7 +98,7 @@ export const fileAPI = {
           if (uploadFileRes.statusCode === 200) {
             const data = JSON.parse(uploadFileRes.data);
             if (data.code === 200) {
-              resolve(data.data.fileUrl || data.data.filePath);
+              resolve(data.data);
             } else {
               reject(new Error(data.message || '上传失败'));
             }

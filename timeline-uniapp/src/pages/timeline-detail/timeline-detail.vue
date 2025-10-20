@@ -43,7 +43,7 @@
           <view class="event-desc">{{ event.desc }}</view>
           <view class="event-images" v-if="event.images && event.images.length">
             <view class="event-img-row" v-for="row in getImageRows(event.images)" :key="row[0]">
-              <image v-for="img in row" :key="img" :src="img" class="event-img" mode="aspectFill" />
+              <image v-for="(img, imgIndex) in row" :key="img" :src="img" class="event-img" mode="aspectFill" @click="previewImage(event.images, imgIndex)" />
             </view>
           </view>
           <view class="event-tags">
@@ -134,6 +134,17 @@
       </view>
     </u-popup>
     
+    <!-- 图片预览组件 -->
+    <u-popup :show="showImagePreview" mode="center" round="16" @close="closeImagePreview" :closeable="true" :z-index="100">
+      <view class="image-preview-container">
+        <swiper class="preview-swiper" :current="currentImageIndex" @change="handleSwiperChange">
+          <swiper-item v-for="(img, index) in previewImages" :key="index">
+            <image :src="img" mode="aspectFit" class="preview-swiper-img" />
+          </swiper-item>
+        </swiper>
+        <view class="preview-indicator">{{ currentImageIndex + 1 }}/{{ previewImages.length }}</view>
+      </view>
+    </u-popup>
 
   </view>
 </template>
@@ -174,7 +185,11 @@ export default {
         desc: ''
       },
       events: [],
-      sortAscending: true // 默认正序排列（从早到晚）
+      sortAscending: true, // 默认正序排列（从早到晚）
+      // 图片预览相关
+      showImagePreview: false,
+      previewImages: [],
+      currentImageIndex: 0
     }
   },
   computed: {
@@ -406,6 +421,23 @@ export default {
       });
     },
     
+    // 预览图片
+    previewImage(images, index) {
+      this.previewImages = images;
+      this.currentImageIndex = index;
+      this.showImagePreview = true;
+    },
+    
+    // 关闭图片预览
+    closeImagePreview() {
+      this.showImagePreview = false;
+    },
+    
+    // 处理滑动切换
+    handleSwiperChange(e) {
+      this.currentImageIndex = e.detail.current;
+    },
+    
     createEvent() {
       // 表单验证
       if (!this.newEvent.title) {
@@ -610,13 +642,25 @@ export default {
 }
 .timeline-line {
   position: absolute;
-  left: 40rpx;
+  left: 44rpx; /* 调整位置以对齐节点圆圈 */
   top: 20rpx;
   bottom: 20rpx;
   width: 4rpx;
   background: #338aff;
   opacity: 0.6;
   z-index: 1;
+}
+.timeline-dot {
+  position: absolute;
+  left: 40rpx; /* 调整位置以确保时间轴线贯穿 */
+  top: 40rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #338aff;
+  border: 4rpx solid #fff;
+  box-shadow: 0 0 0 4rpx rgba(51,138,255,0.3);
+  z-index: 2;
 }
 .event-card {
   background: #fff;
@@ -710,6 +754,36 @@ export default {
 .event-action-btn:active {
   opacity: 1;
 }
+/* 图片预览样式 */
+.image-preview-container {
+  width: 90vw;
+  height: 90vw;
+  max-height: 80vh;
+  position: relative;
+  background: #000;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+.preview-swiper {
+  width: 100%;
+  height: 100%;
+}
+.preview-swiper-img {
+  width: 100%;
+  height: 100%;
+}
+.preview-indicator {
+  position: absolute;
+  bottom: 20rpx;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 24rpx;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6rpx 0;
+}
+
 .edit-btn {
   color: #338aff;
 }

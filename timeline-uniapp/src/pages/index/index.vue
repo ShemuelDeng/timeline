@@ -4,6 +4,7 @@
       <text class="main-title">时光轴</text>
       <text class="sub-title">每一次的记录都是珍贵的</text>
       <button class="create-btn" @click="showCreateModal">+ 创建新时光轴</button>
+      <u-button class="jump-btn" type="primary" plain hairline @click="goMoments">跳转时间轴组件</u-button>
     </view>
     <view class="timeline-list">
       <view
@@ -219,6 +220,12 @@ export default {
       })
     },
     
+    goMoments() {
+      uni.navigateTo({
+        url: '/pages/moments/index'
+      })
+    },
+    
     showCreateModal() {
       this.showModal = true;
     },
@@ -405,6 +412,10 @@ export default {
   border: none;
   box-shadow: 0 2rpx 8rpx 0 rgba(51,138,255,0.08);
   margin-bottom: 24rpx;
+}
+.jump-btn {
+  width: 300rpx;
+  margin-top: 12rpx;
 }
 .timeline-list {
   display: flex;

@@ -18,6 +18,12 @@
       "style": {
         "navigationBarTitleText": "时光轴"
       }
+    },
+    {
+      "path": "pages/moments/index",
+      "style": {
+        "navigationBarTitleText": "团纸日记"
+      }
     }
   ]
 }
