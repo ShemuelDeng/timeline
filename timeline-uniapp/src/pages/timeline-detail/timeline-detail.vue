@@ -135,7 +135,7 @@
     </u-popup>
     
     <!-- 图片预览组件 -->
-    <u-popup :show="showImagePreview" mode="center" round="16" @close="closeImagePreview" :closeable="true" :z-index="100">
+    <u-popup :show="showImagePreview" mode="center" :round="0" @close="closeImagePreview" :closeable="true" :z-index="100" :custom-style="{width: '100vw', height: '100vh', overflow: 'hidden', background: '#000', borderRadius: 0}">
       <view class="image-preview-container">
         <swiper class="preview-swiper" :current="currentImageIndex" @change="handleSwiperChange">
           <swiper-item v-for="(img, index) in previewImages" :key="index">
@@ -154,6 +154,9 @@
           </swiper-item>
         </swiper>
         <view class="preview-indicator">{{ currentImageIndex + 1 }}/{{ previewImages.length }}</view>
+        <view class="preview-close" @click="closeImagePreview">
+          <text class="close-icon">×</text>
+        </view>
       </view>
     </u-popup>
 
@@ -790,12 +793,10 @@ export default {
 }
 /* 图片预览样式 */
 .image-preview-container {
-  width: 90vw;
-  height: 90vw;
-  max-height: 80vh;
+  width: 100vw;
+  height: 100vh;
   position: relative;
   background: #000;
-  border-radius: 16rpx;
   overflow: hidden;
 }
 .preview-swiper {
@@ -828,6 +829,24 @@ export default {
   font-size: 24rpx;
   background: rgba(0, 0, 0, 0.3);
   padding: 6rpx 0;
+}
+.preview-close {
+  position: absolute;
+  top: 40rpx;
+  right: 40rpx;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  z-index: 101;
+}
+.close-icon {
+  color: #fff;
+  font-size: 40rpx;
+  font-weight: bold;
 }
 
 .edit-btn {
