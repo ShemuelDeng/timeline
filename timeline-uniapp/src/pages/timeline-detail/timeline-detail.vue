@@ -39,11 +39,24 @@
             </view>
             <text class="event-meta-item">{{ event.place }}</text>
           </view>
-          <view class="event-title">{{ event.title }}</view>
-          <view class="event-desc">{{ event.desc }}</view>
-          <view class="event-images" v-if="event.images && event.images.length">
-            <view class="event-img-row" v-for="row in getImageRows(event.images)" :key="row[0]">
-              <image v-for="(img, imgIndex) in row" :key="img" :src="img" class="event-img" mode="aspectFill" @click="previewImage(event.images, imgIndex)" />
+          <!-- 事件内容区域，根据内容类型调整布局 -->
+          <view class="event-content">
+            <!-- 标题区域，如果有标题则显示 -->
+            <view class="event-title" v-if="event.title.trim()">{{ event.title }}</view>
+            
+            <!-- 描述区域，如果有描述则显示 -->
+            <view class="event-desc" v-if="event.desc.trim()">{{ event.desc }}</view>
+            
+            <!-- 图片区域，如果有图片则显示 -->
+            <view class="event-images" v-if="event.images && event.images.length">
+              <view class="event-img-row" v-for="row in getImageRows(event.images)" :key="row[0]">
+                <image v-for="(img, imgIndex) in row" :key="img" :src="img" class="event-img" mode="aspectFill" @click="previewImage(event.images, imgIndex)" />
+              </view>
+            </view>
+            
+            <!-- 无内容提示，当标题、描述和图片都为空时显示 -->
+            <view class="event-empty" v-if="!event.title.trim() && !event.desc.trim() && (!event.images || !event.images.length)">
+              <text class="empty-text">无内容</text>
             </view>
           </view>
           <view class="event-tags">
@@ -129,7 +142,7 @@
         </view>
         <view class="form-actions">
           <u-button type="info" text="取消" plain shape="circle" @click="hideAddEventModal"></u-button>
-          <u-button type="primary" text="添加" shape="circle" @click="createEvent"></u-button>
+          <u-button type="primary" text="添加" shape="circle" @click="createEvent" :disabled="!isFormValid"></u-button>
         </view>
       </view>
     </u-popup>
@@ -183,6 +196,24 @@ export default {
         imagesFileKeys: [],
         imageUrl: ''
       },
+      // 表单校验规则
+      rules: {
+        title: [{
+          required: true,
+          message: '请输入事件标题',
+          trigger: ['blur', 'change']
+        }],
+        date: [{
+          required: true,
+          message: '请选择日期',
+          trigger: ['blur', 'change']
+        }],
+        place: [{
+          required: true,
+          message: '请输入地点',
+          trigger: ['blur', 'change']
+        }]
+      },
       tagIndex: 0,
       tags: [
         { text: '重要时刻', value: '重要时刻' },
@@ -209,6 +240,12 @@ export default {
     }
   },
   computed: {
+    // 表单校验：标题、内容、图片任意一项不为空则通过
+    isFormValid() {
+      return this.newEvent.title.trim() !== '' || 
+             this.newEvent.desc.trim() !== '' || 
+             this.newEvent.images.length > 0;
+    },
     sortedEvents() {
       // 复制数组以避免修改原始数据
       const sortedArray = [...this.events]
@@ -281,7 +318,7 @@ export default {
                   date: formattedDate,
                   timeAgo: timeAgo,
                   place: item.location || '未知地点',
-                  desc: item.content || '暂无描述',
+                  desc: item.content,
                   tags: item.tag ? [item.tag] : ['其他'],
                   images: item.images || []
                 };
@@ -392,9 +429,8 @@ export default {
               const tempFilePaths = res.tempFilePaths;
               const uploadPromises = tempFilePaths.map(filePath => {
                 return fileAPI.uploadFile(filePath)
-                  .then(fileUrl => {
-                    // 上传成功，返回文件URL
-                    return fileUrl;
+                  .then(updateResult => {
+                    return updateResult;
                   })
                   .catch(err => {
                     throw new Error(err.message || '上传失败');
@@ -403,11 +439,11 @@ export default {
               
               // 处理所有上传结果
               Promise.all(uploadPromises)
-                .then(filePaths => {
+                .then(updateResults => {
                   // 将上传成功的文件路径添加到图片数组
-                  filePaths.forEach(tempFileData => {
-                    this.newEvent.images.push(tempFileData.fileUrl)
-                    this.newEvent.imagesFileKeys.push(tempFileData.filePath)
+                  updateResults.forEach( ({ fileUrl, filePath }) => {
+                    this.newEvent.images.push(fileUrl)
+                    this.newEvent.imagesFileKeys.push(filePath)
                   })
                   uni.hideLoading();
                   uni.showToast({
@@ -500,6 +536,13 @@ export default {
       });
       
       // 准备请求数据
+      // 获取当前时间的时分秒
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      const currentTime = `${hours}:${minutes}:${seconds}`;
+      
       const data = {
         timelineId: this.timelineId,
         title: this.newEvent.title,
@@ -508,7 +551,7 @@ export default {
         tag: this.newEvent.tag,
         location: this.newEvent.place,
         images: this.newEvent.imagesFileKeys,
-        eventTime: this.newEvent.date.replace(/\//g, '-') + ' 00:00:00'
+        eventTime: this.newEvent.date.replace(/\//g, '-') + ' ' + currentTime
       };
       
       // 调用API创建事件
@@ -754,6 +797,12 @@ export default {
 .event-meta-item {
   color: #8f8f94;
 }
+.event-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .event-title {
   font-size: 32rpx;
   font-weight: 600;
@@ -764,6 +813,18 @@ export default {
   font-size: 26rpx;
   color: #6b7a8f;
   margin-bottom: 14rpx;
+}
+
+.event-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30rpx 0;
+}
+
+.empty-text {
+  color: #999;
+  font-size: 28rpx;
 }
 .event-images {
   margin-bottom: 14rpx;

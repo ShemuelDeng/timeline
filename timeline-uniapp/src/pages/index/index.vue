@@ -154,7 +154,7 @@ export default {
               id: item.id,
               icon: this.getIconByTag(item.tag),
               title: item.title,
-              desc: item.description || '暂无描述',
+              desc: item.description,
               tag: item.tag,
               date: this.formatDate(item.createTime),
               count: item.eventCount || 0,
