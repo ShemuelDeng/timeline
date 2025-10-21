@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shemuel.timeline.config.FastjsonListStringTypeHandler;
+import com.shemuel.timeline.tools.mp.EncryptTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
@@ -30,9 +31,11 @@ public class Event implements Serializable {
     private Long timelineId;
 
     @Schema(description = "事件标题")
+    @TableField(jdbcType = JdbcType.VARCHAR, typeHandler = EncryptTypeHandler.class)
     private String title;
 
     @Schema(description = "事件内容，支持富文本或纯文本（HTML 格式）")
+    @TableField(jdbcType = JdbcType.VARCHAR, typeHandler = EncryptTypeHandler.class)
     private String content;
 
     @Schema(description = "是否是富文本； 0:普通文本， 1： 富文本")

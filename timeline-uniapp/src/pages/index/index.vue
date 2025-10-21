@@ -322,13 +322,13 @@ export default {
       }
       
       // 表单验证
-      if (!this.newTimeline.title) {
-        uni.showToast({
-          title: '请输入标题',
-          icon: 'none'
-        });
-        return;
-      }
+      // if (!this.newTimeline.title) {
+      //   uni.showToast({
+      //     title: '请输入标题',
+      //     icon: 'none'
+      //   });
+      //   return;
+      // }
       
       // 显示加载中
       uni.showLoading({

@@ -121,6 +121,13 @@ export const eventAPI = {
     return request(`/api/event/list?timelineId=${timelineId}`)
   },
 
+  // 5. 删除时间轴下的事件
+  deleteEvent(timelineId) {
+    return request(`/api/event/delete/${timelineId}`, {
+      method: 'DELETE'
+    })
+  },
+
   // 4. 给时间轴添加事件
   addEvent(data) {
     return request('/api/event/add', {

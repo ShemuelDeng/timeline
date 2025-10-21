@@ -30,7 +30,7 @@ public class EventServiceImpl extends ServiceImpl<EventMapper, Event> implements
      */
     @Override
     public IPage<Event> selectPage(Event event) {
-        Page<Event> page = PageUtil.getPage(); // 你原本的分页工具
+        Page<Event> page = PageUtil.getPage();
         return this.baseMapper.selectPage(page, event);
     }
 

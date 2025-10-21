@@ -7,8 +7,8 @@
     <resultMap id="EventResultMap" type="com.shemuel.timeline.entity.Event">
         <id column="id" property="id" />
         <result column="timeline_id" property="timelineId"/>
-        <result column="title" property="title"/>
-        <result column="content" property="content"/>
+        <result column="title" property="title" typeHandler="com.shemuel.timeline.tools.mp.EncryptTypeHandler"/>
+        <result column="content" property="content"  typeHandler="com.shemuel.timeline.tools.mp.EncryptTypeHandler"/>
         <result column="tag" property="tag"/>
         <result column="location" property="location"/>
         <result column="images" property="images"

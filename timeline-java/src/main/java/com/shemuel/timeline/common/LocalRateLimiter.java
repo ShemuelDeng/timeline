@@ -27,6 +27,7 @@ public class LocalRateLimiter implements IRateLimiter {
     }
 
     public LocalRateLimiter(int limitTimeSecond, int limitCount) {
+
         if (limitTimeSecond <= 0 || limitCount <= 0) {
             throw new IllegalArgumentException();
         }

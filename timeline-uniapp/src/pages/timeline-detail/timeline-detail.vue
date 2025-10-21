@@ -477,13 +477,13 @@ export default {
     
     createEvent() {
       // 表单验证
-      if (!this.newEvent.title) {
-        uni.showToast({
-          title: '请输入事件标题',
-          icon: 'none'
-        });
-        return;
-      }
+      // if (!this.newEvent.title) {
+      //   uni.showToast({
+      //     title: '请输入事件标题',
+      //     icon: 'none'
+      //   });
+      //   return;
+      // }
       
       if (!this.newEvent.date) {
         uni.showToast({
@@ -561,12 +561,33 @@ export default {
         content: '确定要删除这个事件吗？',
         success: (res) => {
           if (res.confirm) {
-            // 模拟删除事件
-            this.events = this.events.filter(item => item.id !== event.id)
-            uni.showToast({
-              title: '删除成功',
-              icon: 'success'
-            })
+            eventAPI.deleteEvent(event.id)
+                .then(res => {
+                  if (res.code === 200) {
+                    // 创建成功，刷新列表
+                    this.hideAddEventModal();
+                    this.fetchEventList(this.timelineId);
+                    uni.showToast({
+                      title: '删除成功',
+                      icon: 'success'
+                    });
+                  } else {
+                    uni.showToast({
+                      title: res.message || '删除失败',
+                      icon: 'none'
+                    });
+                  }
+                })
+                .catch(err => {
+                  console.error('删除事件失败:', err);
+                  uni.showToast({
+                    title: '删除失败',
+                    icon: 'none'
+                  });
+                })
+                .finally(() => {
+                  uni.hideLoading();
+                });
           }
         }
       })
