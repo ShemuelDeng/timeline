@@ -45,8 +45,6 @@ public class GoldPricePushSchedule {
     @Value("${wx.timelineId.gold}")
     private String templateId;
 
-    @Value("${gaode.api.key}")
-    private String apiKey;
 
 
     /**

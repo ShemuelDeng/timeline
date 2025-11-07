@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+//@Component
 public class CustomUserIsolationHandler implements TenantLineHandler {
 
     private static List<String> ignoreTableList = new ArrayList<>();
@@ -20,7 +20,9 @@ public class CustomUserIsolationHandler implements TenantLineHandler {
         ignoreTableList.add("gen_table");
         ignoreTableList.add("gen_table_column");
         ignoreTableList.add("user_profile");
-
+        ignoreTableList.add("t_reminder_category");
+        ignoreTableList.add("t_reminder_template_field");
+        ignoreTableList.add("t_user_reminder_field");
     }
 
     @Override
