@@ -60,6 +60,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { reminderAPI } from '@/utils/api.js'
 
 const today = new Date()
@@ -167,7 +168,16 @@ const handleSubmit = async () => {
     uni.hideLoading()
   }
 }
-
+/**
+ * 再提醒入口：
+ * 详情页这样跳：/pages/remind/create-remind?title=xxx
+ * 这里把 title 取出来自动填充
+ */
+onLoad((options) => {
+  if (options && options.title) {
+    form.value.title = decodeURIComponent(options.title)
+  }
+})
 </script>
 
 <style lang="scss" scoped>

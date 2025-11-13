@@ -18,6 +18,12 @@
         "navigationBarTitleText": "创建提醒"
       }
     },
+    {
+      "path": "pages/remind/detail",
+      "style": {
+        "navigationBarTitleText": "提醒详情"
+      }
+    },
 
     {
       "path": "pages/tools/index",

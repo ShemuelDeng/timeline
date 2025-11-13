@@ -1,9 +1,9 @@
 package com.shemuel.timeline.schedule;
 
 import com.shemuel.timeline.common.Constants;
+import com.shemuel.timeline.common.RemindStatus;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.mapper.TUserReminderMapper;
-import com.shemuel.timeline.service.TUserReminderService;
 import com.shemuel.timeline.tools.wx.WeComRobotTool;
 import com.shemuel.timeline.utils.DateUtil;
 import com.shemuel.timeline.utils.ScheduleUtil;
@@ -51,7 +51,7 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
         Long reminId = Long.parseLong(taskPayloads[1]);
 
         TUserReminder remind = tUserReminderService.selectById(reminId);
-        if (remind == null || Objects.equals(remind.getIsActive(), Constants.NO_active)){
+        if (remind == null || Objects.equals(remind.getStatus(), Constants.NO_active)){
             return;
         }
 
@@ -59,7 +59,8 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
 
         Long nextRemindTime = ScheduleUtil.getNextRemindTime(remind);
         if (nextRemindTime == null){
-            remind.setIsActive(Constants.NO_active);
+            // 没有下次提醒时间，则代表已过期
+            remind.setStatus(RemindStatus.EXPIRED);
         }else {
             remind.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
         }

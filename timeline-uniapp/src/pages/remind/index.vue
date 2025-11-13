@@ -8,17 +8,14 @@
         :bgColor="'#ffffff'"
         :titleStyle="{fontWeight:600,fontSize:'18px'}"
     >
-      <template #left><u-icon name="list" size="22" /></template>
-      <template #right>
-        <view class="nav-right">
-          <u-button shape="circle" size="small" :hairline="false" text="···" class="ghost-btn" />
-          <u-button shape="circle" size="small" :hairline="false" icon="scan" class="ghost-btn" />
-        </view>
-      </template>
     </u-navbar>
 
     <!-- tabs -->
     <view class="tabs-row">
+
+      <!-- 三条杠按钮，挪到这里 -->
+      <u-icon name="list" size="22" color="#333" class="tabs-menu" />
+
       <u-tabs
           v-model:current="current"
           :list="tabs"
@@ -28,15 +25,17 @@
           :inactiveStyle="{color:'#666'}"
           itemStyle="height:44px;padding:0 14px;"
       />
-      <u-icon name="account" color="#11b668" size="20" class="group-icon" />
+<!--      <u-icon name="account" color="#11b668" size="20" class="group-icon" />-->
     </view>
 
     <!-- 列表 / 空状态 -->
     <view v-if="remindList && remindList.length" class="remind-list">
+      <!-- 改成 -->
       <view
           v-for="item in remindList"
           :key="item.id"
           class="remind-card"
+          @click="goDetail(item)"
       >
         <view class="remind-card-top">
           <text class="remind-title">{{ item.title }}</text>
@@ -163,9 +162,9 @@ export default {
     return {
       // 顶部 tabs
       tabs: [
-        { name: '待提醒' },
-        { name: '已过期' },
-        { name: '已完成' }
+        { name: '待提醒', status: 0 },  // 0：待提醒
+        { name: '已过期', status: 1 },  // 1：已过期
+        { name: '已完成', status: 2 }   // 2：已完成
       ],
       current: 0,
 
@@ -181,6 +180,21 @@ export default {
       // 当前选择的提醒 & 操作弹窗
       showActionSheet: false,
       selectedReminder: null
+    }
+  },
+  computed: {
+    // 当前 tab 对应的提醒状态
+    currentStatus() {
+      const tab = this.tabs[this.current];
+      return tab ? tab.status : 0; // 默认 0：待提醒
+    },
+
+    // 空状态显示的文案（可选优化）
+    emptyTitle() {
+      if (this.currentStatus === 0) return '暂无待提醒事项';
+      if (this.currentStatus === 1) return '暂无已过期提醒';
+      if (this.currentStatus === 2) return '暂无已完成提醒';
+      return '暂无数据';
     }
   },
 
@@ -206,11 +220,15 @@ export default {
   },
 
   methods: {
-    // tab 切换（目前只是切 tab，后续可以根据 current 过滤/请求）
+    //
+    // tab 切换
     onTabChange(e) {
       const idx = typeof e === 'number' ? e : e?.index;
-      if (typeof idx === 'number') this.current = idx;
-      // TODO: 根据 current 加载不同状态列表（待提醒 / 已过期 / 已完成）
+      if (typeof idx === 'number') {
+        this.current = idx;
+        // 切 tab 的时候重新请求当前状态的列表
+        this.fetchRemindList();
+      }
     },
 
     // 格式化提醒时间 => “今天 11:55 | 周四”
@@ -295,7 +313,12 @@ export default {
     // 获取提醒列表
     fetchRemindList() {
       this.loading = true;
-      reminderAPI.getReminderList()
+
+      const params = {
+        status: this.currentStatus   // 关键：根据当前 tab 传 status
+      };
+
+      reminderAPI.getReminderList(params)
           .then(res => {
             if (res.code === 200) {
               const page = res.data || {};
@@ -337,6 +360,14 @@ export default {
       this.showActionSheet = true;
     },
 
+    // 跳转到详情页
+    goDetail(item) {
+      if (!item || !item.id) return
+      uni.navigateTo({
+        url: `/pages/remind/detail?id=${item.id}`
+      })
+    },
+
     // 关闭底部操作弹窗
     closeActionSheet() {
       this.showActionSheet = false;
@@ -353,12 +384,13 @@ export default {
     },
 
     // 完成（这里假设 isActive = 0 表示已完成，具体你可以再调整）
+// 完成
     onCompleteReminder() {
       if (!this.selectedReminder) return;
       const id = this.selectedReminder.id;
       reminderAPI.updateReminder({
         id,
-        isActive: 0
+        status: 2   // ⭐ 2：已完成
       }).then(res => {
         if (res.code === 200) {
           uni.showToast({
@@ -366,7 +398,7 @@ export default {
             icon: 'success'
           });
           this.closeActionSheet();
-          this.fetchRemindList();
+          this.fetchRemindList();   // 刷新当前 tab 列表
         } else {
           uni.showToast({
             title: res.message || '操作失败',
@@ -381,6 +413,7 @@ export default {
         });
       });
     },
+
 
     // 删除
     onDeleteReminder() {
@@ -630,6 +663,28 @@ export default {
   font-size: 36rpx;
   color: #999;
   padding: 0 10rpx;
+}
+
+
+.tabs-row {
+  display: flex;
+  align-items: center;
+  padding: 0 16rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.tabs-menu {
+  padding-right: 12rpx;
+}
+
+.tabs-main {
+  flex: 1;
+}
+
+.group-icon {
+  margin-left: 12rpx;
+  padding: 0 4rpx;
 }
 
 </style>

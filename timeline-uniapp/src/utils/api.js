@@ -176,6 +176,13 @@ export const reminderAPI = {
     })
   },
 
+  // 获取提醒详情
+  getReminderDetail(id) {
+    return request(`/api/t-user-reminder/${id}`, {
+      method: 'GET'
+    })
+  },
+
   // 修改提醒
   updateReminder(data) {
     return request('/api/t-user-reminder/update', {

@@ -301,16 +301,7 @@ export default {
   box-shadow: 0 6rpx 20rpx rgba(0,0,0,0.15);
 }
 
-.action-btn {
-  width: 48rpx;
-  height: 48rpx;
-  background: #f0f7ff;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 1rpx solid #e1f0ff;
-}
+
 
 /* 小红点样式 */
 .moment-item:last-child .actions::after {

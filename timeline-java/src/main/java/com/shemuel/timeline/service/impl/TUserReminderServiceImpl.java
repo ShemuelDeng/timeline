@@ -41,7 +41,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         wrapper.eq(tUserReminder.getContent() != null, TUserReminder::getContent, tUserReminder.getContent());
         wrapper.eq(tUserReminder.getRemindTime() != null, TUserReminder::getRemindTime, tUserReminder.getRemindTime());
         wrapper.eq(tUserReminder.getRepeatRule() != null, TUserReminder::getRepeatRule, tUserReminder.getRepeatRule());
-        wrapper.eq(tUserReminder.getIsActive() != null, TUserReminder::getIsActive, tUserReminder.getIsActive());
+        wrapper.eq(tUserReminder.getStatus() != null, TUserReminder::getStatus, tUserReminder.getStatus());
         wrapper.eq(tUserReminder.getCreateTime() != null, TUserReminder::getCreateTime, tUserReminder.getCreateTime());
         wrapper.eq(tUserReminder.getUpdateTime() != null, TUserReminder::getUpdateTime, tUserReminder.getUpdateTime());
         return page(PageUtil.getPage(), wrapper);
@@ -61,7 +61,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         wrapper.eq(tUserReminder.getContent() != null, TUserReminder::getContent, tUserReminder.getContent());
         wrapper.eq(tUserReminder.getRemindTime() != null, TUserReminder::getRemindTime, tUserReminder.getRemindTime());
         wrapper.eq(tUserReminder.getRepeatRule() != null, TUserReminder::getRepeatRule, tUserReminder.getRepeatRule());
-        wrapper.eq(tUserReminder.getIsActive() != null, TUserReminder::getIsActive, tUserReminder.getIsActive());
+        wrapper.eq(tUserReminder.getStatus() != null, TUserReminder::getStatus, tUserReminder.getStatus());
         wrapper.eq(tUserReminder.getCreateTime() != null, TUserReminder::getCreateTime, tUserReminder.getCreateTime());
         wrapper.eq(tUserReminder.getUpdateTime() != null, TUserReminder::getUpdateTime, tUserReminder.getUpdateTime());
         return list(wrapper);
