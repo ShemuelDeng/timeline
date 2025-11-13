@@ -145,9 +145,57 @@ export const eventAPI = {
     })
   }
 }
+// 用户提醒相关API
+export const reminderAPI = {
+  // 新增提醒
+  addReminder(data) {
+    return request('/api/t-user-reminder/add', {
+      method: 'POST',
+      data: {
+        // userId 建议由后端通过 token 自动填，这里不传
+        templateId: data.templateId || null,
+        title: data.title,
+        content: data.content || '',
+        // 后端是 LocalDateTime，传 'yyyy-MM-dd HH:mm:ss' 字符串即可
+        remindTime: data.remindTime,
+        // 如 DAILY, WEEKLY, MONTHLY, NONE
+        repeatRule: data.repeatRule || 'NONE',
+        isActive: data.isActive != null ? data.isActive : 1,
+        // createTime / updateTime 通常由后端填，如果你现在没自动填，也可以像 timeline 一样在前端带过去
+        // createTime: data.createTime,
+        // updateTime: data.updateTime
+      }
+    })
+  },
+
+  // 获取提醒列表
+  getReminderList(params = {}) {
+    return request('/api/t-user-reminder/list', {
+      method: 'GET',
+      data: params
+    })
+  },
+
+  // 修改提醒
+  updateReminder(data) {
+    return request('/api/t-user-reminder/update', {
+      method: 'PUT',
+      data
+    })
+  },
+
+  // 删除提醒（支持单个或多个）
+  deleteReminder(ids) {
+    const idPath = Array.isArray(ids) ? ids.join(',') : ids
+    return request(`/api/t-user-reminder/delete/${idPath}`, {
+      method: 'DELETE'
+    })
+  }
+}
 
 
 
 // 导出配置供其他地方使用
 export { API_BASE_URL }
-export default { timelineAPI, eventAPI, authAPI }
+export default { timelineAPI, eventAPI, authAPI, fileAPI, reminderAPI }
+

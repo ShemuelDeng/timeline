@@ -5,6 +5,7 @@ import App from "./App.vue";
 
 // 引入uview-plus
 import uviewPlus from 'uview-plus'
+import 'uview-plus/index.scss'   // ← 必须加！
 
 export function createApp() {
 	const app = createSSRApp(App);

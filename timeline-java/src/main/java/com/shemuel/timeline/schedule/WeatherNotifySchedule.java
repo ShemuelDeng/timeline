@@ -93,6 +93,7 @@ public class WeatherNotifySchedule {
                         .call()
                         .content();
                 log.info("weatherNotify called retry times {}, content: {}",retryTimes,  content);
+                break;
             } catch (Exception e) {
                 retryTimes++;
                 log.error("weatherNotify error,", e);

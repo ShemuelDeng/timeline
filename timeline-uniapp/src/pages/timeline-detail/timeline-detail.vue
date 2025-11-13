@@ -743,25 +743,27 @@ export default {
 }
 .timeline-line {
   position: absolute;
-  left: 44rpx; /* 调整位置以对齐节点圆圈 */
+  left: 52rpx; /* 竖线的中心大约对齐圆点中心 */
   top: 20rpx;
   bottom: 20rpx;
   width: 4rpx;
   background: #338aff;
   opacity: 0.6;
   z-index: 1;
+  transform: translateX(-49%); /* 水平居中 */
 }
 .timeline-dot {
   position: absolute;
-  left: 40rpx; /* 调整位置以确保时间轴线贯穿 */
+  left: 52rpx; /* 与 timeline-line 保持一致 */
   top: 40rpx;
-  width: 16rpx;
-  height: 16rpx;
+  width: 20rpx;
+  height: 20rpx;
   border-radius: 50%;
   background: #338aff;
   border: 4rpx solid #fff;
   box-shadow: 0 0 0 4rpx rgba(51,138,255,0.3);
   z-index: 2;
+  transform: translateX(-50%); /* 关键：让圆点中心与竖线中心对齐 */
 }
 .event-card {
   background: #fff;

@@ -2,28 +2,54 @@
   "easycom": {
     "autoscan": true,
     "custom": {
-      "^uni-(.*)":"@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
-      "^u-(.*)":"uview-plus/components/u-$1/u-$1.vue"
+      "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue"
     }
   },
   "pages": [
     {
-      "path": "pages/index/index",
+      "path": "pages/remind/index",
       "style": {
-        "navigationBarTitleText": "时光轴"
+        "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/timeline-detail/timeline-detail",
+      "path": "pages/remind/create-remind",
       "style": {
-        "navigationBarTitleText": "时光轴"
+        "navigationBarTitleText": "创建提醒"
       }
     },
+
     {
-      "path": "pages/moments/index",
+      "path": "pages/tools/index",
       "style": {
-        "navigationBarTitleText": "团纸日记"
+        "navigationStyle": "custom"
       }
     }
-  ]
+  ],
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#11b668",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/remind/index",
+        "text": "提醒",
+        "iconPath": "static/tabbar/remind.png",
+        "selectedIconPath": "static/tabbar/remind.png"
+      },
+      {
+        "pagePath": "pages/tools/index",
+        "text": "工具",
+        "iconPath": "static/tabbar/tools.png",
+        "selectedIconPath": "static/tabbar/tools.png"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f7f8f9"
+  }
 }

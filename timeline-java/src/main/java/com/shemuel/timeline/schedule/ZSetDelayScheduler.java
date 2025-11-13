@@ -31,7 +31,7 @@ public abstract class ZSetDelayScheduler implements Runnable, InitializingBean, 
     private final static int KEY_EXPIRE_MINUTES = 150;
 
     private final static int MINUTES_FACTOR = 60 * 1000;
-    
+
     private final static String DELAY_REDIS_KEY_PREFIX = "delay:task";
 
     private String zSetKey;
@@ -114,7 +114,7 @@ public abstract class ZSetDelayScheduler implements Runnable, InitializingBean, 
     protected void schedule(Long time, String... taskPayloads) {
         redisTemplate.opsForZSet().add(zSetKey, getZSetValue(taskPayloads), time);
         redisTemplate.expire(zSetKey, delayKeyExpireTime(), TimeUnit.MINUTES);
-        log.info("定时任务取消: {}, {}, [{}]", zSetKey, String.join(", ", taskPayloads));
+        log.info("添加定时任务: {}, {}", zSetKey, String.join(", ", taskPayloads));
     }
 
     /**

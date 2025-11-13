@@ -1,6 +1,12 @@
 package com.shemuel.timeline.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
+
+import cn.dev33.satoken.stp.StpUtil;
+import com.shemuel.timeline.schedule.UserRemindScheduler;
+import com.shemuel.timeline.utils.DateUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.shemuel.timeline.mapper.TUserReminderMapper;
 import com.shemuel.timeline.entity.TUserReminder;
@@ -17,6 +23,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, TUserReminder> implements TUserReminderService {
+
+    @Autowired
+    private UserRemindScheduler userRemindScheduler;
 
     /**
      * 查询用户提醒表分页列表
@@ -63,7 +72,22 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
      */
     @Override
     public boolean insert(TUserReminder tUserReminder) {
-        return save(tUserReminder);
+        // 从 Sa-Token 中取当前登录用户 ID，当作 userId / 租户ID
+        Long loginId = StpUtil.getLoginIdAsLong();
+        tUserReminder.setUserId(loginId);
+
+        // 补上时间字段（如果你数据库没有默认值 / 触发器的话）
+        LocalDateTime now = LocalDateTime.now();
+        if (tUserReminder.getCreateTime() == null) {
+            tUserReminder.setCreateTime(now);
+        }
+        tUserReminder.setUpdateTime(now);
+
+        boolean saved  = this.save(tUserReminder);
+
+        userRemindScheduler.schedule(DateUtil.toTimestamp(tUserReminder.getRemindTime()), tUserReminder.getUserId(), tUserReminder.getId());
+
+        return saved;
     }
 
     /**

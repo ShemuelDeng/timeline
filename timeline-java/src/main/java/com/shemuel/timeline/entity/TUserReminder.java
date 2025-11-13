@@ -32,6 +32,7 @@ public class TUserReminder implements Serializable {
     private String content;
 
     @Schema(description = "提醒时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime remindTime;
 
     @Schema(description = "重复规则，如 DAILY, WEEKLY, MONTHLY")
@@ -41,8 +42,10 @@ public class TUserReminder implements Serializable {
     private Integer isActive;
 
     @Schema(description = "")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
     @Schema(description = "")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 }

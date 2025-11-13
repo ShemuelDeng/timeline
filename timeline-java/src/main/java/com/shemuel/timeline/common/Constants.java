@@ -22,4 +22,7 @@ public class Constants {
     public static final Object USER = "user";
 
     public static final Long XIAO_ASSISTANT_ID  = 2L;
+
+    public static final Integer active = 1;
+    public static final Integer NO_active = 0;
 }
