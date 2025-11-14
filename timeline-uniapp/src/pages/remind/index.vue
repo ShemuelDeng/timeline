@@ -14,7 +14,14 @@
     <view class="tabs-row">
 
       <!-- 三条杠按钮，挪到这里 -->
-      <u-icon name="list" size="22" color="#333" class="tabs-menu" />
+      <u-icon
+          name="list"
+          size="22"
+          color="#333"
+          class="tabs-menu"
+          @click="openSideMenu"
+      />
+
 
       <u-tabs
           v-model:current="current"
@@ -28,43 +35,48 @@
 <!--      <u-icon name="account" color="#11b668" size="20" class="group-icon" />-->
     </view>
 
-    <!-- 列表 / 空状态 -->
-    <view v-if="remindList && remindList.length" class="remind-list">
-      <!-- 改成 -->
-      <view
-          v-for="item in remindList"
-          :key="item.id"
-          class="remind-card"
-          @click="goDetail(item)"
-      >
-        <view class="remind-card-top">
-          <text class="remind-title">{{ item.title }}</text>
-          <text
-              class="more-btn"
-              @click.stop="openActionSheet(item)"
+    <!-- ☆ 中间自适应区域，只在这里滚动 -->
+    <view class="main">
+      <view class="scroll-area">
+        <!-- 列表 / 空状态：v-if / v-else 必须紧挨着 -->
+        <view v-if="remindList && remindList.length" class="remind-list">
+          <view
+              v-for="item in remindList"
+              :key="item.id"
+              class="remind-card"
+              @click="goDetail(item)"
           >
-            ...
-          </text>
+            <view class="remind-card-top">
+              <text class="remind-title">{{ item.title }}</text>
+              <text
+                  class="more-btn"
+                  @click.stop="openActionSheet(item)"
+              >
+                ...
+              </text>
+            </view>
+
+            <view class="remind-card-bottom">
+              <u-icon name="clock" size="18" color="#11b668" />
+              <text class="remind-time-text">
+                {{ formatRemindLabel(item.remindTime) }}
+              </text>
+            </view>
+          </view>
         </view>
 
-        <view class="remind-card-bottom">
-          <u-icon name="clock" size="18" color="#11b668" />
-          <text class="remind-time-text">{{ formatRemindLabel(item.remindTime) }}</text>
+        <view v-else class="empty-wrap">
+          <view class="empty-illus">
+            <u-icon name="clock" size="48" color="#cfcfcf" />
+          </view>
+          <view class="empty-title">暂无待提醒事项</view>
+          <view class="empty-sub">点击右下角按钮创建第一个提醒吧</view>
         </view>
       </view>
     </view>
 
-    <view v-else class="empty-wrap">
-      <view class="empty-illus">
-        <u-icon name="clock" size="48" color="#cfcfcf" />
-      </view>
-      <view class="empty-title">暂无待提醒事项</view>
-      <view class="empty-sub">点击右下角按钮创建第一个提醒吧</view>
-    </view>
-
-    <!-- 悬浮按钮区域 -->
+    <!-- 悬浮按钮区域（fixed，不参与高度计算） -->
     <view class="fab-area">
-      <!-- 创建提醒：加号 -->
       <u-button
           type="success"
           shape="circle"
@@ -78,7 +90,6 @@
         <u-icon name="plus" color="#ffffff" size="28" />
       </u-button>
 
-      <!-- 语音按钮 -->
       <u-button
           type="success"
           shape="circle"
@@ -151,6 +162,102 @@
       </view>
     </u-popup>
     <!-- ===== 底部操作弹窗 END ===== -->
+
+    <!-- ===== 侧边菜单（左侧抽屉） ===== -->
+    <u-popup
+        :show="showSideMenu"
+        mode="left"
+        :round="0"
+        :safeAreaInsetTop="false"
+        :safeAreaInsetBottom="false"
+        :overlay="true"
+        :overlayStyle="{ background: 'rgba(0,0,0,0.35)' }"
+        @close="closeSideMenu"
+    >
+      <view class="side-panel">
+        <!-- 顶部日期 -->
+        <view class="side-date">
+          {{ todayLabel }}
+        </view>
+
+        <!-- 功能菜单 -->
+        <view class="side-menu">
+          <view class="side-item" @click="goReminderSearch">
+            <view class="side-item-left">
+              <u-icon name="search" size="22" color="#10b769" />
+              <text class="side-item-text">提醒搜索</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+
+          <view class="side-item" @click="goReminderCalendar">
+            <view class="side-item-left">
+              <u-icon name="calendar" size="22" color="#10b769" />
+              <text class="side-item-text">提醒日历</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+
+          <view class="side-item" @click="goReminderTemplate">
+            <view class="side-item-left">
+              <u-icon name="grid" size="22" color="#10b769" />
+              <text class="side-item-text">提醒模板</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+
+          <view class="side-item" @click="goHelp">
+            <view class="side-item-left">
+              <u-icon name="question-circle" size="22" color="#10b769" />
+              <text class="side-item-text">使用帮助</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+        </view>
+
+        <!-- 清空分组标题 -->
+        <view class="side-section-title">
+          ↓ 清空（不可恢复）
+        </view>
+
+        <!-- 清空相关菜单 -->
+        <view class="side-menu">
+          <view class="side-item" @click="clearAll">
+            <view class="side-item-left">
+              <u-icon name="trash" size="22" color="#10b769" />
+              <text class="side-item-text">清空所有</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+
+          <view class="side-item" @click="clearPending">
+            <view class="side-item-left">
+              <u-icon name="trash" size="22" color="#10b769" />
+              <text class="side-item-text">清空待提醒</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+
+          <view class="side-item" @click="clearExpired">
+            <view class="side-item-left">
+              <u-icon name="trash" size="22" color="#10b769" />
+              <text class="side-item-text">清空已过期</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+
+          <view class="side-item" @click="clearCompleted">
+            <view class="side-item-left">
+              <u-icon name="trash" size="22" color="#10b769" />
+              <text class="side-item-text">清空已完成</text>
+            </view>
+            <u-icon name="arrow-right" size="18" color="#cfcfcf" />
+          </view>
+        </view>
+      </view>
+    </u-popup>
+    <!-- ===== 侧边菜单 END ===== -->
+
   </view>
 </template>
 
@@ -179,7 +286,8 @@ export default {
 
       // 当前选择的提醒 & 操作弹窗
       showActionSheet: false,
-      selectedReminder: null
+      selectedReminder: null,
+      showSideMenu: false
     }
   },
   computed: {
@@ -188,6 +296,16 @@ export default {
       const tab = this.tabs[this.current];
       return tab ? tab.status : 0; // 默认 0：待提醒
     },
+
+    todayLabel() {
+      const d = new Date()
+      const pad = (n) => (n < 10 ? '0' + n : '' + n)
+      const weekMap = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+      const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+      const weekStr = weekMap[d.getDay()]
+      return `${dateStr} ${weekStr}`
+    },
+
 
     // 空状态显示的文案（可选优化）
     emptyTitle() {
@@ -220,6 +338,59 @@ export default {
   },
 
   methods: {
+
+    // 打开 / 关闭侧边菜单
+    openSideMenu() {
+      this.showSideMenu = true
+    },
+    closeSideMenu() {
+      this.showSideMenu = false
+    },
+
+    // ===== 侧边菜单点击事件（这里先简单用 toast，你后面可以改成实际页面跳转） =====
+    goReminderSearch() {
+      this.closeSideMenu()
+      // TODO: 替换成你的搜索页面路径
+      // uni.navigateTo({ url: '/pages/remind/search' })
+      uni.showToast({ title: '提醒搜索（待接入）', icon: 'none' })
+    },
+    goReminderCalendar() {
+      this.closeSideMenu()
+      // TODO: 替换成你的日历页面路径
+      // uni.navigateTo({ url: '/pages/calendar/index' })
+      uni.showToast({ title: '提醒日历（待接入）', icon: 'none' })
+    },
+    goReminderTemplate() {
+      this.closeSideMenu()
+      uni.navigateTo({
+        url: '/pages/remind/template-list'
+      })
+    },
+    goHelp() {
+      this.closeSideMenu()
+      // TODO: 替换成你的帮助页面路径
+      // uni.navigateTo({ url: '/pages/help/index' })
+      uni.showToast({ title: '使用帮助（待接入）', icon: 'none' })
+    },
+
+    // 清空相关，可以先简单提示，后面接后端接口
+    clearAll() {
+      this.closeSideMenu()
+      uni.showToast({ title: '清空所有（待接入）', icon: 'none' })
+    },
+    clearPending() {
+      this.closeSideMenu()
+      uni.showToast({ title: '清空待提醒（待接入）', icon: 'none' })
+    },
+    clearExpired() {
+      this.closeSideMenu()
+      uni.showToast({ title: '清空已过期（待接入）', icon: 'none' })
+    },
+    clearCompleted() {
+      this.closeSideMenu()
+      uni.showToast({ title: '清空已完成（待接入）', icon: 'none' })
+    },
+
     //
     // tab 切换
     onTabChange(e) {
@@ -462,17 +633,59 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page { min-height: 100vh; position: relative; background:#f7f7f7; }
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: #f7f7f7;
+}
 
-.nav-right { display:flex; gap:12rpx; }
-.ghost-btn { background:#f3f4f6; color:#333; padding:0 12rpx; box-shadow:0 2rpx 8rpx rgba(0,0,0,.06); }
-.tabs-row { display:flex; align-items:center; padding:0 16rpx; background:#fff; border-bottom:1rpx solid #f0f0f0; }
-.group-icon { margin-left:auto; padding:0 12rpx; }
+.tabs-row {
+  display: flex;
+  align-items: center;
+  padding: 0 16rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
+}
 
-/* 列表样式 */
+.main {
+  flex: 1;
+  min-height: 0;       // ← 就这一行解决“整页滚动”的问题
+  overflow: hidden;
+}
+
+.scroll-area {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* 列表部分保持你的原样 */
 .remind-list {
   padding: 16rpx 24rpx 160rpx;
 }
+
+/* 空状态：不要再用 60vh 了，跟随 scroll-area 高度 */
+.empty-wrap {
+  height: 100%;  // 或者直接删掉 height 这行
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9aa1a7;
+}
+
+
+.nav-right { display:flex; gap:12rpx; }
+.ghost-btn { background:#f3f4f6; color:#333; padding:0 12rpx; box-shadow:0 2rpx 8rpx rgba(0,0,0,.06); }
+
+.group-icon { margin-left:auto; padding:0 12rpx; }
+
+
 
 .remind-card {
   background:#ffffff;
@@ -508,7 +721,6 @@ export default {
 }
 
 /* 空状态 */
-.empty-wrap { height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#9aa1a7; }
 .empty-illus { width:360rpx; height:360rpx; border-radius:360rpx; background:radial-gradient(closest-side,#f4f7f5,#ebf4ef); display:flex; align-items:center; justify-content:center; margin-bottom:28rpx; }
 .empty-title { color:#555; font-size:32rpx; margin-bottom:10rpx; }
 .empty-sub { color:#b6bec6; font-size:26rpx; }
@@ -666,13 +878,7 @@ export default {
 }
 
 
-.tabs-row {
-  display: flex;
-  align-items: center;
-  padding: 0 16rpx;
-  background: #fff;
-  border-bottom: 1rpx solid #f0f0f0;
-}
+
 
 .tabs-menu {
   padding-right: 12rpx;
@@ -686,5 +892,54 @@ export default {
   margin-left: 12rpx;
   padding: 0 4rpx;
 }
+
+/* ===== 左侧抽屉菜单 ===== */
+.side-panel {
+  width: 330rpx;                 // 整个抽屉宽度，差不多 3/4 屏
+  height: 100vh;
+  background: #ffffff;
+  padding: 100rpx 32rpx 40rpx;   // 顶部稍微留空，让视觉舒服一点
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-date {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 40rpx;
+}
+
+.side-menu {
+  background: #ffffff;
+}
+
+.side-item {
+  height: 96rpx;
+  padding: 0 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1rpx solid #f3f3f3;
+}
+
+.side-item-left {
+  display: flex;
+  align-items: center;
+}
+
+.side-item-text {
+  margin-left: 20rpx;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.side-section-title {
+  margin: 40rpx 0 8rpx;
+  font-size: 26rpx;
+  color: #888;
+}
+
 
 </style>

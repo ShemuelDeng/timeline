@@ -103,6 +103,15 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
      */
     @Override
     public boolean deleteByIds(List<Long> ids) {
-        return removeByIds(ids);
+        boolean b = removeByIds(ids);
+
+        long userId = StpUtil.getLoginIdAsLong();
+
+        // 取消任务
+        for (Long id : ids) {
+            userRemindScheduler.cancelSchedule(String.valueOf(userId), String.valueOf(id));
+        }
+
+        return b;
     }
 }

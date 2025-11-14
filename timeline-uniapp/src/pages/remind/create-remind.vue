@@ -34,7 +34,6 @@
           <picker mode="time" :value="form.time" @change="onTimeChange">
             <view class="time-text">{{ form.time }}</view>
           </picker>
-          <text class="plus-icon">＋</text>
         </view>
       </view>
 
@@ -42,7 +41,7 @@
 
       <!-- 重复 -->
       <view class="form-item arrow-item">
-        <text class="label">重复(vip)</text>
+        <text class="label">重复</text>
         <picker :value="repeatIndex" :range="repeatOptions" @change="onRepeatChange">
           <view class="picker-value">
             {{ repeatOptions[repeatIndex] }}

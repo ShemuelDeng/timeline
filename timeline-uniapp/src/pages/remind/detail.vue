@@ -42,6 +42,13 @@
         <text class="row-value">{{ remindTimeLabel }}</text>
       </view>
 
+
+      <!-- 行：重复类型 -->
+      <view class="detail-row">
+        <text class="row-label">重复类型</text>
+        <text class="row-value">{{ repeatRuleText }}</text>
+      </view>
+
       <!-- 行：提醒状态（当前时间 > 提醒时间：已提醒，否则：待提醒） -->
       <view class="detail-row">
         <text class="row-label">提醒状态</text>
@@ -101,10 +108,19 @@ export default {
   data() {
     return {
       reminderId: null,
+      repeatRuleMap:{
+        'NONE': '不重复',
+        'DAILY': '每天',
+        'WEEKLY': '每周',
+        'MONTHLY': '每月',
+        'YEARLY': '每年',
+        'WORKDAY':'工作日'
+      },
       reminder: {
         id: null,
         title: '',
         content: '',
+        repeatRule: '',
         remindTime: '',
         createTime: ''
       },
@@ -125,6 +141,12 @@ export default {
     remindStatusText() {
       return this.isReminded ? '已提醒' : '待提醒';
     },
+
+    // 重复类型
+    repeatRuleText() {
+      return this.repeatRuleMap[this.reminder.repeatRule] || '不重复';
+    },
+
 
     // 提醒时间展示：今天 12:14 | 周四
     remindTimeLabel() {

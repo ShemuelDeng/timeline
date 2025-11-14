@@ -51,7 +51,7 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
         Long reminId = Long.parseLong(taskPayloads[1]);
 
         TUserReminder remind = tUserReminderService.selectById(reminId);
-        if (remind == null || Objects.equals(remind.getStatus(), Constants.NO_active)){
+        if (remind == null || !Objects.equals(remind.getStatus(), RemindStatus.TO_REMIND)){
             return;
         }
 

@@ -19,6 +19,12 @@
       }
     },
     {
+      "path": "pages/remind/template-list",
+      "style": {
+        "navigationBarTitleText": "提醒模版"
+      }
+    },
+    {
       "path": "pages/remind/detail",
       "style": {
         "navigationBarTitleText": "提醒详情"
@@ -28,7 +34,8 @@
     {
       "path": "pages/tools/index",
       "style": {
-        "navigationStyle": "custom"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "工具"
       }
     }
   ],

@@ -18,7 +18,7 @@ public class WeComRobotTool {
     public WxBaseResp sendGroupMessage(@ToolParam(description = "The message to send") String message) {
         // 使用 webhookUrl 调用微信群机器人的 HTTP 接口
         log.info("sendGroupMessage invoked {}",  message);
-        WebhookSendMsgReq webhookSendMsgReq = WebhookSendMsgReq.markdown(message);
+        WebhookSendMsgReq webhookSendMsgReq = WebhookSendMsgReq.text(message);
         return WxUtils.sendWebhookMsg(robotKey,webhookSendMsgReq);
     }
 }
