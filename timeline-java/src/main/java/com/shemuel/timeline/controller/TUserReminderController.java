@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shemuel.timeline.common.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class TUserReminderController {
     @GetMapping("/list")
     @Operation(summary = "获取用户提醒表列表")
     public RestResult<IPage<TUserReminder>> list(TUserReminder tUserReminder) {
+        tUserReminder.setVisible(Constants.YES);
         return RestResult.success(tUserReminderService.selectPage(tUserReminder));
     }
 

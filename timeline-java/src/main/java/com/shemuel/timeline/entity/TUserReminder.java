@@ -44,6 +44,10 @@ public class TUserReminder implements Serializable {
     @Schema(description = "提醒状态，0：待提醒，1：已过期，2：已完成")
     private Integer status;
 
+
+    @Schema(description = "是否可见， 1： 可见， 0： 不可见")
+    private Integer visible;
+
     @Schema(description = "")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;

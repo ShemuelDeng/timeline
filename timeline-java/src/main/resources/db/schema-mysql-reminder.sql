@@ -42,6 +42,7 @@ CREATE TABLE t_user_reminder (
     remind_time DATETIME NOT NULL COMMENT '提醒时间',
     repeat_rule VARCHAR(64) DEFAULT NULL COMMENT '重复规则，如 DAILY, WEEKLY, MONTHLY',
     status TINYINT(1) DEFAULT 1 COMMENT '提醒状态，0：待提醒，1：已过期，2：已完成',
+    visible TINYINT(1) DEFAULT 1 COMMENT '是否可以见1：可见， 0：不可见',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (template_id) REFERENCES t_reminder_template(id)
