@@ -15,7 +15,8 @@
     {
       "path": "pages/remind/create-remind",
       "style": {
-        "navigationBarTitleText": "创建提醒"
+        "navigationBarTitleText": "创建提醒",
+        "navigationStyle": "custom"
       }
     },
     {

@@ -30,6 +30,21 @@ public class MySQLUserRepository implements UserRepository {
         return users;
     }
 
+
+    @Override
+    public UserProfile saveOrUpdate(UserProfile user) {
+        // 根据主键是否为空判断
+        if (user.getId() == null) {
+            // 新增
+            userProfileMapper.insert(user);
+        } else {
+            // 更新（如果需要，可以判断一下返回值是否为 0，做异常处理）
+            userProfileMapper.updateById(user);
+        }
+        return user;
+    }
+
+
     @Override
     public Optional<UserProfile> findByIdentifier(String identifier) {
         if (PhoneUtil.isPhone(identifier)){
@@ -48,6 +63,14 @@ public class MySQLUserRepository implements UserRepository {
     public Optional<UserProfile> findByPhone(String phone) {
         LambdaQueryWrapper<UserProfile> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(UserProfile::getPhone, phone);
+        UserProfile userProfile = userProfileMapper.selectOne(queryWrapper);
+        return Optional.ofNullable(userProfile);
+    }
+
+    @Override
+    public Optional<UserProfile> findByWxOpenId(String openid) {
+        LambdaQueryWrapper<UserProfile> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserProfile::getOpenid, openid);
         UserProfile userProfile = userProfileMapper.selectOne(queryWrapper);
         return Optional.ofNullable(userProfile);
     }

@@ -6,7 +6,7 @@ const config = {
   },
   // 生产环境
   production: {
-    baseURL: 'https://your-production-domain.com'
+    baseURL: 'http://localhost:8088'
   }
 }
 
@@ -45,8 +45,13 @@ const request = (url, options = {}) => {
 }
 
 // 用户认证相关API
+// utils/api.js 或你现在放 authAPI 的那个文件
+
+// 用户认证相关API
 export const authAPI = {
-  // 用户登录
+  /**
+   * 普通账号密码登录（H5 调用）
+   */
   login() {
     return request('/auth/login', {
       method: 'POST',
@@ -55,8 +60,27 @@ export const authAPI = {
         password: '849113..'
       }
     })
+  },
+
+  /**
+   * 微信小程序登录
+   * @param {Object} payload
+   * @param {string} payload.code    wx.login 返回的 code
+   * @param {string} payload.avatar  getUserProfile 返回的 avatarUrl
+   * @param {string} payload.nickname getUserProfile 返回的 nickName
+   */
+  loginByWeixin({ code, avatar, nickname }) {
+    return request('/auth/loginByWeixin', {
+      method: 'POST',
+      data: {
+        code,
+        avatar,
+        nickname
+      }
+    })
   }
 }
+
 
 // 时间轴相关API
 export const timelineAPI = {

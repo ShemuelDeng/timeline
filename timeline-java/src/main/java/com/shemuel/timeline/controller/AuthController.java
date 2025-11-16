@@ -9,6 +9,7 @@ import com.shemuel.timeline.common.RestResult;
 import com.shemuel.timeline.dto.UserLoginDTO;
 import com.shemuel.timeline.dto.UserPasswordResetDTO;
 import com.shemuel.timeline.dto.UserRegisterDTO;
+import com.shemuel.timeline.dto.WxLoginDTO;
 import com.shemuel.timeline.entity.UserProfile;
 import com.shemuel.timeline.exception.BusinessException;
 import com.shemuel.timeline.service.AuthService;
@@ -46,6 +47,26 @@ public class AuthController {
         // 登录成功
         SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
         return RestResult.success(tokenInfo);
+    }
+
+    // AuthController.java
+    @PostMapping("/loginByWeixin")
+    public RestResult<SaTokenInfo> loginByWeixin(@RequestBody @Validated WxLoginDTO wxLoginDTO) {
+        try {
+            // 交给 service 处理业务，返回 UserProfile
+            UserProfile user = authService.loginByWeixin(wxLoginDTO);
+
+            // 用 Sa-Token 登录
+            StpUtil.login(user.getId());
+
+            SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
+            return RestResult.success(tokenInfo);
+        } catch (BusinessException e) {
+            return RestResult.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResult.error("微信登录失败，请稍后重试");
+        }
     }
 
 

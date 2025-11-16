@@ -3,6 +3,7 @@ package com.shemuel.timeline.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shemuel.timeline.common.Constants;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +30,7 @@ public class TUserReminderController {
     @Operation(summary = "获取用户提醒表列表")
     public RestResult<IPage<TUserReminder>> list(TUserReminder tUserReminder) {
         tUserReminder.setVisible(Constants.YES);
+        tUserReminder.setUserId(StpUtil.getLoginIdAsLong());
         return RestResult.success(tUserReminderService.selectPage(tUserReminder));
     }
 

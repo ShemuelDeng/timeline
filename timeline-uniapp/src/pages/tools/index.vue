@@ -3,19 +3,13 @@
     <!-- 顶部栏：标题 + 右侧两个圆按钮 -->
     <u-navbar placeholder title="工具" safeAreaInsetTop :bgColor="'#ffffff'"
               :titleStyle="{fontWeight:600,fontSize:'18px'}">
-      <template #right>
-        <view class="nav-right">
-          <u-button shape="circle" size="small" :hairline="false" text="···" class="ghost-btn" />
-          <u-button shape="circle" size="small" :hairline="false" icon="scan" class="ghost-btn" />
-        </view>
-      </template>
     </u-navbar>
 
     <u-gap height="8" bgColor="#f7f8f9" />
 
     <!-- 分组 1：时间进度 -->
     <view class="section">
-      <u-section title="时间进度" :right="false" lineColor="#2b7cff" />
+      <u-title title="时间进度" :right="false" lineColor="#2b7cff" />
       <u-grid :border="false" col="2" class="grid">
         <u-grid-item v-for="(it, idx) in timeTools" :key="idx" @click="open(it)">
           <view class="card">
@@ -31,7 +25,7 @@
 
     <!-- 分组 2：生活服务 -->
     <view class="section">
-      <u-section title="生活服务" :right="false" lineColor="#2b7cff" />
+      <u-title title="生活服务" :right="false" lineColor="#2b7cff" />
       <u-grid :border="false" col="2" class="grid">
         <u-grid-item v-for="(it, idx) in lifeTools" :key="idx" @click="open(it)">
           <view class="card">
@@ -47,7 +41,7 @@
 
     <!-- 分组 3：实用工具 -->
     <view class="section">
-      <u-section title="实用工具" :right="false" lineColor="#2b7cff" />
+      <u-title title="实用工具" :right="false" lineColor="#2b7cff" />
       <u-grid :border="false" col="2" class="grid">
         <u-grid-item v-for="(it, idx) in utilTools" :key="idx" @click="open(it)">
           <view class="card">

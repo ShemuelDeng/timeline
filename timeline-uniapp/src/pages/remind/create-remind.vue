@@ -2,11 +2,20 @@
   <view class="create-page">
     <!-- 顶部导航 -->
     <u-navbar
+        placeholder
+        safeAreaInsetTop
         title="创建提醒"
-        :autoBack="true"
+        :autoBack="false"
         :bgColor="'#ffffff'"
         :titleStyle="{fontWeight:600,fontSize:'18px'}"
-    />
+        @leftClick="handleBack"
+    >
+      <template #left>
+        <u-icon name="arrow-left" size="22" color="#333" />
+      </template>
+    </u-navbar>
+
+
 
     <!-- 表单内容 -->
     <view class="form-wrap">
@@ -106,6 +115,9 @@ const onDateChange = (e) => {
 
 const onTimeChange = (e) => {
   form.value.time = e.detail.value
+}
+const handleBack = () => {
+  uni.navigateBack()
 }
 
 const onRepeatChange = (e) => {

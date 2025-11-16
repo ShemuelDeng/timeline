@@ -251,7 +251,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.shemuel.timeline.TimelineJavaApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

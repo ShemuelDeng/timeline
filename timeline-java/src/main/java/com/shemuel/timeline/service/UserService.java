@@ -47,8 +47,8 @@ public class UserService {
     public Optional<UserProfile> findByIdentifier(String identifier) {
         return userRepository.findByIdentifier(identifier);
     }
-    public Optional<UserProfile> findUserByPhone(String email) {
-        return userRepository.findByPhone(email);
+    public Optional<UserProfile> findByWxOpenId(String openId) {
+        return userRepository.findByWxOpenId(openId);
     }
     public Optional<UserProfile> findUserByUsername(String email) {
         return userRepository.findByUsername(email);
@@ -57,5 +57,10 @@ public class UserService {
     public int updateById (UserProfile userProfile) {
         return userRepository.update(userProfile);
     }
+
+    public UserProfile saveOrUpdate (UserProfile userProfile) {
+        return userRepository.saveOrUpdate(userProfile);
+    }
+
 
 }
