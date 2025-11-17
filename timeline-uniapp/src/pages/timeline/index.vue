@@ -1,18 +1,37 @@
 <template>
   <view class="timeline-page">
+    <!-- 顶部导航：标题在最上方 + 返回按钮 -->
+    <u-navbar
+        placeholder
+        safeAreaInsetTop
+        title="时光轴"
+        :bgColor="'#ffffff'"
+        :titleStyle="{ fontWeight: 600, fontSize: '18px' }"
+        :autoBack="true"
+        leftIcon="arrow-left"
+    >
+      <template #left>
+        <u-icon name="arrow-left" size="22" color="#333" />
+      </template>
+    </u-navbar>
+
+    <!-- 页面内容 -->
     <view class="header">
-      <text class="main-title">时光轴</text>
+      <!-- 原来的大标题去掉，避免和导航重复，只保留副标题 -->
       <text class="sub-title">每一次的记录都是珍贵的</text>
       <button class="create-btn" @click="showCreateModal">+ 创建新时光轴</button>
-      <u-button class="jump-btn" type="primary" plain hairline @click="goMoments">跳转时间轴组件</u-button>
+      <u-button class="jump-btn" type="primary" plain hairline @click="goMoments">
+        跳转时间轴组件
+      </u-button>
     </view>
+
     <view class="timeline-list">
       <view
-        v-for="(item, idx) in timelines"
-        :key="item.id"
-        class="timeline-card"
-        :style="{ borderTop: '8rpx solid ' + item.color, boxShadow: '0 4rpx 24rpx 0 rgba(0,0,0,0.06)' }"
-        @click="goDetail(item)"
+          v-for="(item, idx) in timelines"
+          :key="item.id"
+          class="timeline-card"
+          :style="{ borderTop: '8rpx solid ' + item.color, boxShadow: '0 4rpx 24rpx 0 rgba(0,0,0,0.06)' }"
+          @click="goDetail(item)"
       >
         <view class="card-header">
           <text class="card-icon" :style="{ background: item.bgColor }">{{ item.icon }}</text>
@@ -28,6 +47,7 @@
         </view>
       </view>
     </view>
+
     <!-- 创建新时光轴弹框 -->
     <view class="modal" v-if="showModal">
       <view class="modal-mask" @click="hideCreateModal"></view>
@@ -72,7 +92,7 @@
         </view>
       </view>
     </view>
-    
+
     <!-- 授权弹窗 -->
     <view class="auth-modal" v-if="showAuthModal">
       <view class="auth-mask" @click="hideAuthPopup"></view>
@@ -97,6 +117,7 @@
     </view>
   </view>
 </template>
+
 
 <script>
 import { timelineAPI, authAPI } from '@/utils/api.js';
@@ -216,7 +237,7 @@ export default {
     
     goDetail(item) {
       uni.navigateTo({
-        url: `/pages/timeline-detail/timeline-detail?id=${item.id}`
+        url: `/pages/timeline/timeline-detail?id=${item.id}`
       })
     },
     
@@ -383,24 +404,30 @@ export default {
   background: #f7fafd;
   padding-bottom: 40rpx;
 }
+
+/* 顶部内容区域（在导航条下面） */
 .header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 60rpx;
+  padding-top: 40rpx; /* 导航下面留一点空白 */
   padding-bottom: 30rpx;
 }
+
+/* 现在不再显示 main-title，如不需要可删除此样式和对应节点 */
 .main-title {
   font-size: 48rpx;
   font-weight: bold;
   color: #222;
   margin-bottom: 12rpx;
 }
+
 .sub-title {
   font-size: 28rpx;
   color: #6b7a8f;
   margin-bottom: 32rpx;
 }
+
 .create-btn {
   background: #338aff;
   color: #fff;
@@ -413,16 +440,19 @@ export default {
   box-shadow: 0 2rpx 8rpx 0 rgba(51,138,255,0.08);
   margin-bottom: 24rpx;
 }
+
 .jump-btn {
   width: 300rpx;
   margin-top: 12rpx;
 }
+
 .timeline-list {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   padding: 0 24rpx;
 }
+
 .timeline-card {
   width: 100%;
   max-width: 48%;
@@ -434,16 +464,19 @@ export default {
   transition: box-shadow 0.2s;
   display: inline-block;
 }
+
 @media (min-width: 500rpx) {
   .timeline-card {
     max-width: 48%;
   }
 }
+
 .card-header {
   display: flex;
   align-items: center;
   margin-bottom: 18rpx;
 }
+
 .card-icon {
   width: 56rpx;
   height: 56rpx;
@@ -454,19 +487,23 @@ export default {
   font-size: 36rpx;
   margin-right: 16rpx;
 }
+
 .card-title {
   font-size: 32rpx;
   font-weight: 600;
   color: #222;
 }
+
 .card-desc {
   font-size: 26rpx;
   color: #6b7a8f;
   margin-bottom: 18rpx;
 }
+
 .card-tags {
   margin-bottom: 18rpx;
 }
+
 .card-tag {
   font-size: 22rpx;
   color: #338aff;
@@ -474,6 +511,7 @@ export default {
   border-radius: 10rpx;
   padding: 4rpx 18rpx;
 }
+
 .card-footer {
   display: flex;
   justify-content: space-between;
@@ -481,10 +519,7 @@ export default {
   color: #b0b8c9;
   margin-top: 8rpx;
 }
-.card-date {
-}
-.card-count {
-}
+
 /* 弹框样式 */
 .modal {
   position: fixed;
@@ -555,7 +590,9 @@ export default {
   margin-bottom: 12rpx;
 }
 
-.form-input, .form-textarea, .form-select {
+.form-input,
+.form-textarea,
+.form-select {
   width: 100%;
   height: 80rpx;
   border: 1rpx solid #ddd;
@@ -584,7 +621,8 @@ export default {
   margin-top: 40rpx;
 }
 
-.btn-cancel, .btn-create {
+.btn-cancel,
+.btn-create {
   width: 45%;
   height: 80rpx;
   line-height: 80rpx;
@@ -697,7 +735,8 @@ export default {
   margin-top: 40rpx;
 }
 
-.auth-cancel, .auth-confirm {
+.auth-cancel,
+.auth-confirm {
   width: 45%;
   height: 80rpx;
   line-height: 80rpx;
@@ -716,3 +755,4 @@ export default {
   color: #fff;
 }
 </style>
+

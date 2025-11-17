@@ -38,6 +38,18 @@
         "navigationStyle": "custom",
         "navigationBarTitleText": "工具"
       }
+    },
+    {
+      "path": "pages/timeline/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/timeline/timeline-detail",
+      "style": {
+        "navigationStyle": "custom"
+      }
     }
   ],
   "tabBar": {
