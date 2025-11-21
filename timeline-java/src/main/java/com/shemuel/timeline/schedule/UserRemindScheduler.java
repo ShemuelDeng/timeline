@@ -75,43 +75,30 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
             return;
         }
 
-        reminderPushService.pushReminder(remind);
+        reminderPushService.pushReminder(remindItem);
 
-        // 2. 查询子项
-        List<TUserReminderItem> items = tUserReminderItemService.list(
-                new LambdaQueryWrapper<TUserReminderItem>()
-                        .eq(TUserReminderItem::getMainId, remind.getId())
-        );
 
-        if (items == null || items.isEmpty()) {
-            // 没有子项 == 视为一次性任务，直接过期
-            remind.setStatus(RemindStatus.EXPIRED);
-            remind.setUpdateTime(LocalDateTime.now());
-            tUserReminderMapper.updateById(remind);
-            return;
-        }
 
         // 3. 根据子项计算下一次提醒时间，并推进每个子项的 remindTime
         Long nextRemindTime = ScheduleUtil.getNextRemindTime(remind, remindItem);
         if (nextRemindTime == null) {
-            // 没有下次提醒时间，则代表已过期
-            remind.setStatus(RemindStatus.EXPIRED);
-        } else {
-            remind.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
+            log.info("任务提醒，user:{}, 内容：{}, 本提醒任务已完结，无下次提醒：{}");
+            // 更新状态
+            return;
         }
+
+
+        remind.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
+        remindItem.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
 
         remind.setUpdateTime(LocalDateTime.now());
+        remindItem.setUpdateTime(LocalDateTime.now());
         tUserReminderMapper.updateById(remind);
-
-        // 4. 批量更新子项新的 remindTime
-        tUserReminderItemService.updateBatchById(items);
+        tUserReminderItemService.updateById(remindItem);
 
         // 5. 有下次提醒时间的话，重新加入队列
-        if (nextRemindTime != null) {
-            schedule(nextRemindTime, userId, remindItem.getId());
-        }
-
+        schedule(nextRemindTime, userId, remindItem.getId());
         log.info("任务提醒，user:{}, 内容：{}, 下次提醒时间：{}",
-                userId, remind.getTitle(), remind.getRemindTime());
+                userId, remind.getTitle(), remindItem.getRemindTime());
     }
 }

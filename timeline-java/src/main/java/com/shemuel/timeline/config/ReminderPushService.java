@@ -2,6 +2,7 @@ package com.shemuel.timeline.config;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.shemuel.timeline.entity.TUserReminder;
+import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.tools.wx.WeComRobotTool;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ public class ReminderPushService {
         private LocalDateTime remindTime;
     }
 
-    public void pushReminder(TUserReminder remind) {
+    public void pushReminder(TUserReminderItem remind) {
         ReminderMsg msg = new ReminderMsg();
         msg.setReminderId(remind.getId());
         msg.setTitle(remind.getTitle());
@@ -40,7 +41,7 @@ public class ReminderPushService {
         }
 
         // 企微推送
-        String notifyText = "来自utool提醒助手 \n" + remind.getTitle() + " \n" + remind.getContent();
+        String notifyText = "来自utools提醒助手 \n" + remind.getTitle() + " \n" + remind.getContent();
         // 1. 发送提醒（这里你后面可以接入真正的桌面弹窗 / 微信 / Webhook 等）
         weComRobotTool.sendGroupMessage(notifyText);
     }

@@ -5,9 +5,7 @@ import com.shemuel.timeline.common.RepeatType;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.entity.TUserReminderItem;
 
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,143 +17,207 @@ import java.util.Objects;
 public class ScheduleUtil {
     private static final long day_seconds = 24 * 60 * 60 * 1000L;
 
+
     /**
      * 根据主表 + 子表项，计算该子项“下一次提醒时间”
      *
-     * 说明：
-     *  - main：主提醒，用来兜底 repeatRule / repeatInterval / customMode 等
-     *  - sub ：子提醒项，承载本次实际的 remindTime + repeatRule + repeatInterval
-     *
-     * 返回值：
-     *  - 下次提醒时间的时间戳（毫秒，13 位）
-     *  - 如果没有下一次（比如单次提醒已经过期），返回 null
-     *
-     * 注意：这里只负责“算时间”，不直接修改 sub.remindTime，
-     *       是否把结果写回数据库由调用方决定。
+     * @param main 主提醒记录（包含 repeatRule / customMode / doCircle 等）
+     * @param sub  子提醒项（包含当前 remindTime / repeatRule / repeatInterval）
+     * @return 下次提醒时间的毫秒级时间戳（13 位）；如果没有下一次则返回 null
      */
     public static Long getNextRemindTime(TUserReminder main, TUserReminderItem sub) {
         if (main == null || sub == null) {
             return null;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime next = calcNextTimeForItem(main, sub, now);
+        LocalDateTime next = calcNextTimeForItem(main, sub);
         if (next == null) {
             return null;
         }
         return DateUtil.toTimestamp(next);
     }
 
-    /**
-     * 计算单个子项的“下一个提醒时间”
-     *
-     * 规则说明（都是 **以子项为单位独立滚动**）：
-     *  - NONE      : 单次提醒，还没到就用原时间；过了就没有下一次（返回 null）
-     *  - DAILY     : 按天滚动，remindTime += interval 天，直到 > now
-     *  - WEEKLY    : 按周滚动，remindTime += interval 周，直到 > now
-     *  - WORKDAY   : 仅工作日（周一~周五），每天 +1，遇到周六日跳过
-     *  - WEEKEND   : 每周同一天（周六或周日），按周滚动（你如果有两天，就建两条子记录）
-     *  - MONTHLY   : 按月滚动，remindTime += interval 月，直到 > now
-     *  - YEARLY    : 按年滚动，remindTime += interval 年，直到 > now
-     *  - CUSTOM    : 目前只支持 BIRTHDAY / ANNIVERSARY，两者都当作 YEARLY 处理
-     */
-    private static LocalDateTime calcNextTimeForItem(TUserReminder main,
-                                                     TUserReminderItem sub,
-                                                     LocalDateTime now) {
 
+    /**
+     * 计算单个子项的“下一次提醒时间”
+     *
+     * 设计要点：
+     *  1. 每个子项都是一条独立时间线，基于自己的 remindTime 往后推
+     *  2. 支持所有 repeatRule：
+     *      - NONE      : 单次提醒
+     *      - DAILY     : 每 N 天
+     *      - WEEKLY    : 每 N 周
+     *      - WORKDAY   : 工作日
+     *      - WEEKEND   : 周末（每周同一天）
+     *      - MONTHLY   : 每 N 月
+     *      - YEARLY    : 每 N 年
+     *      - CUSTOM    : 目前只支持 BIRTHDAY / ANNIVERSARY，当作 YEARLY
+     *  3. 支持“循环提醒”：
+     *      - main.doCircle = 1 且 circleBegin / circleEnd / circleInterval 有效
+     *      - 当天在 [circleBegin, circleEnd] 内每隔 circleInterval 分钟响一次
+     *      - 当天循环结束后，根据 repeatRule 跳到下一天/下周/下月/下一年 的 circleBegin
+     */
+    private static LocalDateTime calcNextTimeForItem(TUserReminder main, TUserReminderItem sub) {
         LocalDateTime t = sub.getRemindTime();
         if (t == null) {
             return null;
         }
 
-        // 1. 取本子项的 repeatRule，若为空则回退到主表的 repeatRule
+        // 1. 确定重复类型：优先子项，其次主表
         String repeatType = sub.getRepeatRule();
         if (repeatType == null || repeatType.isEmpty()) {
             repeatType = main.getRepeatRule();
         }
         if (repeatType == null || repeatType.isEmpty()) {
-            // 没有配置重复规则，就当成单次提醒
-            return t.isAfter(now) ? t : null;
+            // 没写就当单次
+            return null;
         }
 
-        // 2. 处理自定义模式（目前只有 BIRTHDAY / ANNIVERSARY）
+        // 2. 处理自定义模式（生日 / 纪念日 -> YEARLY）
         if (RepeatType.CUSTOM.equals(repeatType)) {
             String customMode = main.getCustomMode();
             if (CustomMode.BIRTHDAY.equals(customMode) || CustomMode.ANNIVERSARY.equals(customMode)) {
-                // 生日 / 纪念日：本质上就是每年重复
                 repeatType = RepeatType.YEARLY;
             } else {
-                // 其他自定义暂不支持，当成单次提醒
-                return t.isAfter(now) ? t : null;
+                // 其他自定义先当单次
+                return null;
             }
         }
 
-        // 3. 取 interval，优先子项，其次主表，默认 1
+        // 3. interval：优先子项，其次主表，默认 1
         Integer intervalObj = sub.getRepeatInterval();
         if (intervalObj == null || intervalObj <= 0) {
             intervalObj = main.getRepeatInterval();
         }
         int interval = (intervalObj == null || intervalObj <= 0) ? 1 : intervalObj;
 
+        // 4. 是否开启循环
+        boolean circleOn = main.getDoCircle() != null
+                && main.getDoCircle() == 1
+                && main.getCircleBegin() != null
+                && main.getCircleEnd() != null
+                && main.getCircleInterval() != null
+                && main.getCircleInterval() > 0;
+
+        if (circleOn) {
+            return calcNextTimeWithCircle(main, sub, repeatType, interval);
+        }
+
+        // 5. 普通重复（不带循环）
         switch (repeatType) {
             case RepeatType.NONE:
-                // 单次提醒：如果还未到，则这就是下次；如果已经过了，则没有下次
-                return t.isAfter(now) ? t : null;
+                // 单次提醒：主/子都不再重复
+                return null;
 
             case RepeatType.DAILY:
-                // 每 N 天：一直往后加 interval 天，直到 > now
-                while (!t.isAfter(now)) {
-                    t = t.plusDays(interval);
-                }
-                return t;
+                return t.plusDays(interval);
 
             case RepeatType.WEEKLY:
-                // 每 N 周：一直往后加 interval 周，直到 > now
-                while (!t.isAfter(now)) {
-                    t = t.plusWeeks(interval);
-                }
-                return t;
+                return t.plusWeeks(interval);
 
             case RepeatType.WORKDAY:
-                // 工作日：仅在周一~周五提醒
-                // 这里 interval 一般为 1，如果你以后要“每 2 个工作日”，可以在这里扩展
-                while (!t.isAfter(now)) {
-                    t = t.plusDays(1);
-                    DayOfWeek day = t.getDayOfWeek();
-                    if (day == DayOfWeek.SATURDAY) {
-                        t = t.plusDays(2); // 跳到周一
-                    } else if (day == DayOfWeek.SUNDAY) {
-                        t = t.plusDays(1); // 跳到周一
-                    }
-                }
-                return t;
+                // 简单版本：每个工作日（不看 interval），如果你未来需要“每隔 N 个工作日”，可以再扩展
+                return nextWorkday(t);
 
             case RepeatType.WEEKEND:
-                // 周末：每周同一天（周六或周日）提醒
-                // 建议你的拆分逻辑是「周六一条子记录 + 周日一条子记录」，这样这里就跟 WEEKLY 一样滚动即可
-                while (!t.isAfter(now)) {
-                    t = t.plusWeeks(interval);
-                }
-                return t;
+                // 周末子项建议分别两条：周六一条 / 周日一条
+                return t.plusWeeks(interval);
 
             case RepeatType.MONTHLY:
-                // 每 N 月：一直往后加 interval 月，直到 > now
-                while (!t.isAfter(now)) {
-                    t = t.plusMonths(interval);
-                }
-                return t;
+                return t.plusMonths(interval);
 
             case RepeatType.YEARLY:
-                // 每 N 年：一直往后加 interval 年，直到 > now
-                while (!t.isAfter(now)) {
-                    t = t.plusYears(interval);
-                }
-                return t;
+                return t.plusYears(interval);
 
             default:
-                // 未知类型，兜底当成单次
-                return t.isAfter(now) ? t : null;
+                // 未知类型，先当单次
+                return null;
         }
     }
+
+    /**
+     * 带“循环提醒”的情况：
+     *  - 当前这条子记录刚在 sub.remindTime 被执行
+     *  - 先尝试：同一天在 circle 窗口内的下一次
+     *  - 如果当天循环结束，再按重复类型跳到下一个周期的 circleBegin
+     */
+    private static LocalDateTime calcNextTimeWithCircle(TUserReminder main,
+                                                        TUserReminderItem sub,
+                                                        String repeatType,
+                                                        int interval) {
+        LocalDateTime curr = sub.getRemindTime();    // 刚刚执行的时间
+        LocalDate currDate = curr.toLocalDate();
+
+        LocalTime circleBeginTime = main.getCircleBegin().toLocalTime();
+        LocalTime circleEndTime = main.getCircleEnd().toLocalTime();
+        int circleMinutes = main.getCircleInterval();
+
+        // 1. 今天窗口内：尝试下一个时间点
+        LocalDateTime sameDayNext = curr.plusMinutes(circleMinutes);
+
+        boolean sameDay = sameDayNext.toLocalDate().isEqual(currDate);
+        boolean withinWindow = !sameDayNext.toLocalTime().isAfter(circleEndTime);
+
+        if (sameDay && withinWindow) {
+            // 还在今天的范围内，直接用
+            return sameDayNext;
+        }
+
+        // 2. 今天循环已经结束，跳到“下一个周期”的 circleBegin
+        //    先定义“本周期的起点”：今天的 circleBegin
+        LocalDateTime baseThisCycle = LocalDateTime.of(currDate, circleBeginTime);
+        LocalDateTime nextBase;
+
+        switch (repeatType) {
+            case RepeatType.NONE:
+                // 单次 + 循环：今天的循环结束就没了
+                return null;
+
+            case RepeatType.DAILY:
+                nextBase = baseThisCycle.plusDays(interval);
+                break;
+
+            case RepeatType.WEEKLY:
+            case RepeatType.WEEKEND:
+                nextBase = baseThisCycle.plusWeeks(interval);
+                break;
+
+            case RepeatType.WORKDAY:
+                // 工作日 + 循环：今天循环结束后，跳到下一个工作日的 circleBegin
+                nextBase = nextWorkday(baseThisCycle);
+                break;
+
+            case RepeatType.MONTHLY:
+                nextBase = baseThisCycle.plusMonths(interval);
+                break;
+
+            case RepeatType.YEARLY:
+                nextBase = baseThisCycle.plusYears(interval);
+                break;
+
+            default:
+                // 未知类型，当作单次
+                return null;
+        }
+
+        return nextBase;
+    }
+
+
+    /**
+     * 获取下一个“工作日”的同一时间（周一~周五）
+     * 例如：如果传入周五 09:00，则返回下周一 09:00
+     */
+    private static LocalDateTime nextWorkday(LocalDateTime time) {
+        LocalDateTime t = time.plusDays(1);
+        DayOfWeek day = t.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY) {
+            t = t.plusDays(2);
+        } else if (day == DayOfWeek.SUNDAY) {
+            t = t.plusDays(1);
+        }
+        return t;
+    }
+
 
 }
