@@ -74,3 +74,7 @@ CREATE TABLE `event` (
                          FOREIGN KEY (`timeline_id`) REFERENCES `timeline`(`id`),
                          INDEX `idx_event_time` (`event_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='时间轴事件表';
+
+
+
+ALTER TABLE user_profile ADD utools_id varchar(100) NULL COMMENT 'utools平台Id';

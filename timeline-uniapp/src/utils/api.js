@@ -2,7 +2,7 @@
 const config = {
   // 开发环境
   development: {
-    baseURL: 'http://localhost:8088'
+    baseURL: 'http://172.16.31.233:8088'
   },
   // 生产环境
   production: {

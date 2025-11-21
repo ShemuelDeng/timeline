@@ -6,10 +6,7 @@ import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.util.PhoneUtil;
 import com.shemuel.timeline.annotation.AccessLimit;
 import com.shemuel.timeline.common.RestResult;
-import com.shemuel.timeline.dto.UserLoginDTO;
-import com.shemuel.timeline.dto.UserPasswordResetDTO;
-import com.shemuel.timeline.dto.UserRegisterDTO;
-import com.shemuel.timeline.dto.WxLoginDTO;
+import com.shemuel.timeline.dto.*;
 import com.shemuel.timeline.entity.UserProfile;
 import com.shemuel.timeline.exception.BusinessException;
 import com.shemuel.timeline.service.AuthService;
@@ -69,6 +66,25 @@ public class AuthController {
         }
     }
 
+
+
+    @PostMapping("/utoolsLogin")
+    public RestResult<SaTokenInfo> utoolsLogin(@RequestBody UtoolsLoginRequest request) {
+
+        if (request.getToken() == null || request.getToken().isEmpty()) {
+            return RestResult.error("token 不能为空");
+        }
+
+        // 1. 用 token 调 uTools + 查/建本地用户
+        UserProfile user = authService.loginOrRegisterByUtoolsToken(request.getToken());
+
+        // 2. 用 Sa-Token 登录本地系统
+        StpUtil.login(user.getId());
+
+        // 3. 返回 token 信息给前端
+        SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
+        return RestResult.success(tokenInfo);
+    }
 
     @PostMapping("/register")
     public SaResult register(@RequestBody UserRegisterDTO registerDTO) {

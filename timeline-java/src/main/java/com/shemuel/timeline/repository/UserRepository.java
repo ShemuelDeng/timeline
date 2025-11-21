@@ -12,6 +12,7 @@ public interface UserRepository {
     Optional<UserProfile> findByIdentifier(String identifier);
     Optional<UserProfile> findByPhone(String phone);
     Optional<UserProfile> findByWxOpenId(String openid);
+    Optional<UserProfile> findByUtoolsId(String utoolsId);
     Optional<UserProfile> findByUsername(String username);
      int update(UserProfile userProfile);
     void delete(String userId);

@@ -40,14 +40,51 @@ CREATE TABLE t_user_reminder (
     title VARCHAR(128) NOT NULL COMMENT '提醒标题',
     content TEXT COMMENT '提醒内容',
     remind_time DATETIME NOT NULL COMMENT '提醒时间',
+    repeat_rule VARCHAR(64) DEFAULT NULL COMMENT '重复规则：NONE, DAILY, WEEKLY, MONTHLY, YEARLY,WORKDAY, CUSTOM',
+    custom_mode VARCHAR(64) DEFAULT NULL COMMENT '当重复规则是自定义时，WEEKLY, YEARLY, MEDICINE,ANNIVERSARY 自定义模式： 按月，按年， 用药提醒，纪念日',
+    advance_days INT NOT NULL DEFAULT 0 COMMENT '提起几天提醒',
+    repeat_interval INT NOT NULL DEFAULT 1 COMMENT '间隔数，如每2天/每2周',
+    repeat_weekdays SET('1','2','3','4','5','6','7') NULL COMMENT '每周的星期几',
+    repeat_month_days VARCHAR(256) NULL COMMENT '每月的哪几天，逗号分隔',
+    specify_dates TEXT DEFAULT NULL COMMENT '自定义某年的哪些天 逗号分隔',
+    specify_times TEXT DEFAULT NULL COMMENT '自定义当天的哪几个时间， 逗号分隔',
+
+    status TINYINT(1) DEFAULT 0 COMMENT '提醒状态，0：待提醒，1：已过期，2：已完成',
+    active TINYINT(1) DEFAULT 1 COMMENT '是否开启：1：开启， 0：关闭',
+    do_circle TINYINT(1) DEFAULT 0 COMMENT '是否循环：1：开启， 0：关闭',
+    circle_begin DATETIME DEFAULT NULL COMMENT '循环开始时间',
+    circle_end DATETIME DEFAULT NULL COMMENT '循环结束时间',
+    circle_interval TINYINT(1) DEFAULT 20 COMMENT '循环间隔，如 20， 单位分钟',
+
+    notify_desktop  TINYINT(1) NOT NULL DEFAULT 1 COMMENT '桌面弹窗',
+    notify_wx  TINYINT(1) NOT NULL DEFAULT 1 COMMENT '微信提醒',
+    notify_sound    TINYINT(1) NOT NULL DEFAULT 1 COMMENT '声音提醒',
+    notify_system   TINYINT(1) NOT NULL DEFAULT 0 COMMENT '系统通知/托盘气泡',
+    notify_sound_file    varchar(128) DEFAULT NULL  COMMENT '声音文件',
+
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    webhook VARCHAR(1024) DEFAULT NULL COMMENT '提醒钩子',
+    webhook_method VARCHAR(16) DEFAULT 'POST'
+    FOREIGN KEY (template_id) REFERENCES t_reminder_template(id)
+) COMMENT='用户提醒表主表， 只记录用户需要的提醒类型，方式';
+
+
+
+
+CREATE TABLE t_user_reminder_item (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    main_id BIGINT NOT NULL COMMENT '主表ID',
+    user_id BIGINT NOT NULL COMMENT '用户微信openID',
+    template_id BIGINT DEFAULT NULL COMMENT '引用的模板ID，可为空',
+    title VARCHAR(128) NOT NULL COMMENT '提醒标题',
+    content TEXT COMMENT '提醒内容',
+    remind_time DATETIME NOT NULL COMMENT '提醒时间',
     repeat_rule VARCHAR(64) DEFAULT NULL COMMENT '重复规则，如 DAILY, WEEKLY, MONTHLY',
-    status TINYINT(1) DEFAULT 1 COMMENT '提醒状态，0：待提醒，1：已过期，2：已完成',
-    visible TINYINT(1) DEFAULT 1 COMMENT '是否可以见1：可见， 0：不可见',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (template_id) REFERENCES t_reminder_template(id)
-) COMMENT='用户提醒表';
-
+) COMMENT='用户提醒表子表， 主要记录由主表产生的确切的提示项';
 
 CREATE TABLE t_user_reminder_field (
    id BIGINT PRIMARY KEY AUTO_INCREMENT,

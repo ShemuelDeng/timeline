@@ -1,40 +1,48 @@
 <template>
   <view class="timeline-page">
-    <!-- 顶部导航：标题在最上方 + 返回按钮 -->
+    <!-- 顶部导航 -->
     <u-navbar
         placeholder
         safeAreaInsetTop
         title="时光轴"
-        :bgColor="'#ffffff'"
-        :titleStyle="{ fontWeight: 600, fontSize: '18px' }"
+        :bgColor="'transparent'"
+        :titleStyle="{ fontWeight: 600, fontSize: '18px', color: '#ffffff' }"
         :autoBack="true"
         leftIcon="arrow-left"
-    >
-      <template #left>
-        <u-icon name="arrow-left" size="22" color="#333" />
-      </template>
-    </u-navbar>
+        leftText="返回"
+        leftIconColor="#ffffff"
+        leftTextStyle="{ color: '#ffffff' }"
+    />
 
-    <!-- 页面内容 -->
-    <view class="header">
-      <!-- 原来的大标题去掉，避免和导航重复，只保留副标题 -->
-      <text class="sub-title">每一次的记录都是珍贵的</text>
-      <button class="create-btn" @click="showCreateModal">+ 创建新时光轴</button>
-      <u-button class="jump-btn" type="primary" plain hairline @click="goMoments">
-        跳转时间轴组件
-      </u-button>
+
+    <!-- 顶部介绍 + 按钮区 -->
+    <view class="timeline-header">
+      <text class="header-title">效率时间</text>
+      <text class="header-subtitle">专注记录与分析每一个生活瞬间</text>
+
+      <view class="header-actions">
+        <button class="header-btn primary" @click="showCreateModal">
+          <text class="header-btn-plus">＋</text>
+          <text>创建时光轴</text>
+        </button>
+        <button class="header-btn ghost" @click="goMoments">
+          时间轴组件
+        </button>
+      </view>
     </view>
 
+    <!-- 时光轴卡片列表（保持卡片形式不变） -->
     <view class="timeline-list">
       <view
           v-for="(item, idx) in timelines"
           :key="item.id"
           class="timeline-card"
-          :style="{ borderTop: '8rpx solid ' + item.color, boxShadow: '0 4rpx 24rpx 0 rgba(0,0,0,0.06)' }"
           @click="goDetail(item)"
       >
         <view class="card-header">
-          <text class="card-icon" :style="{ background: item.bgColor }">{{ item.icon }}</text>
+          <text class="card-icon" :style="{ background: item.bgColor }">
+            {{ item.icon }}
+          </text>
           <text class="card-title">{{ item.title }}</text>
         </view>
         <view class="card-desc">{{ item.desc }}</view>
@@ -59,16 +67,29 @@
         <view class="modal-body">
           <view class="form-item">
             <text class="form-label">标题</text>
-            <input class="form-input" type="text" v-model="newTimeline.title" placeholder="例如：宝宝成长记录" />
+            <input
+                class="form-input"
+                type="text"
+                v-model="newTimeline.title"
+                placeholder="例如：宝宝成长记录"
+            />
           </view>
           <view class="form-item">
             <text class="form-label">描述</text>
-            <textarea class="form-textarea" v-model="newTimeline.desc" placeholder="简单描述这个时光轴的内容" />
+            <textarea
+                class="form-textarea"
+                v-model="newTimeline.desc"
+                placeholder="简单描述这个时光轴的内容"
+            />
           </view>
           <view class="form-item">
             <text class="form-label">分类</text>
             <view class="form-select">
-              <picker @change="categoryChange" :value="categoryIndex" :range="categories">
+              <picker
+                  @change="categoryChange"
+                  :value="categoryIndex"
+                  :range="categories"
+              >
                 <view class="picker-value">{{ categories[categoryIndex] }}</view>
               </picker>
             </view>
@@ -76,14 +97,25 @@
           <view class="form-item">
             <text class="form-label">背景图片</text>
             <view class="form-select">
-              <picker @change="bgImageChange" :value="bgImageIndex" :range="bgImageOptions">
-                <view class="picker-value">{{ bgImageOptions[bgImageIndex] }}</view>
+              <picker
+                  @change="bgImageChange"
+                  :value="bgImageIndex"
+                  :range="bgImageOptions"
+              >
+                <view class="picker-value">
+                  {{ bgImageOptions[bgImageIndex] }}
+                </view>
               </picker>
             </view>
           </view>
           <view class="form-item" v-if="bgImageIndex === 1">
             <text class="form-label">自定义图片链接</text>
-            <input class="form-input" type="text" v-model="newTimeline.bgImageUrl" placeholder="或输入自定义图片URL" />
+            <input
+                class="form-input"
+                type="text"
+                v-model="newTimeline.bgImageUrl"
+                placeholder="或输入自定义图片URL"
+            />
           </view>
           <view class="form-actions">
             <button class="btn-cancel" @click="hideCreateModal">取消</button>
@@ -117,6 +149,7 @@
     </view>
   </view>
 </template>
+
 
 
 <script>
@@ -399,128 +432,155 @@ export default {
 </script>
 
 <style scoped>
+/* 整体背景：按参考图提取的蓝紫渐变 */
 .timeline-page {
   min-height: 100vh;
-  background: #f7fafd;
+  box-sizing: border-box;
   padding-bottom: 40rpx;
+  background: linear-gradient(180deg, #6a6dd0 0%, #8184da 45%, #b0b4e1 100%);
 }
 
-/* 顶部内容区域（在导航条下面） */
-.header {
+/* 顶部说明区域 */
+.timeline-header {
+  padding: 32rpx 28rpx 12rpx;
+  color: #ffffff;
+}
+
+.header-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+}
+
+.header-subtitle {
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+
+/* 上方两个按钮：主按钮 + 次按钮 放在一行 */
+.header-actions {
+  margin-top: 26rpx;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  padding-top: 40rpx; /* 导航下面留一点空白 */
-  padding-bottom: 30rpx;
 }
 
-/* 现在不再显示 main-title，如不需要可删除此样式和对应节点 */
-.main-title {
-  font-size: 48rpx;
-  font-weight: bold;
-  color: #222;
-  margin-bottom: 12rpx;
-}
-
-.sub-title {
-  font-size: 28rpx;
-  color: #6b7a8f;
-  margin-bottom: 32rpx;
-}
-
-.create-btn {
-  background: #338aff;
-  color: #fff;
-  font-size: 28rpx;
-  border-radius: 40rpx;
-  padding: 0 48rpx;
+.header-btn {
   height: 64rpx;
-  line-height: 64rpx;
+  padding: 0 30rpx;
+  border-radius: 999rpx;
   border: none;
-  box-shadow: 0 2rpx 8rpx 0 rgba(51,138,255,0.08);
-  margin-bottom: 24rpx;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.jump-btn {
-  width: 300rpx;
-  margin-top: 12rpx;
+/* 主按钮：偏暖一点，突出但不炸眼 */
+.header-btn.primary {
+  background: linear-gradient(135deg, #ffd58e 0%, #ff9ca9 100%);
+  color: #ffffff;
+  box-shadow: 0 6rpx 14rpx rgba(255, 156, 169, 0.45);
 }
 
+/* 次按钮：轻一点，类似参考图右上角的小胶囊 */
+.header-btn.ghost {
+  margin-left: 16rpx;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border: 1rpx solid rgba(255, 255, 255, 0.55);
+}
+
+.header-btn-plus {
+  font-size: 32rpx;
+  margin-right: 6rpx;
+}
+
+/* 卡片列表：两列布局，保持“卡片形式” */
 .timeline-list {
+  padding: 16rpx 24rpx 0;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  padding: 0 24rpx;
 }
 
+/* 单个时光轴卡片：参考图那种浅浅的玻璃卡片效果 */
 .timeline-card {
-  width: 100%;
-  max-width: 48%;
-  background: #fff;
-  border-radius: 24rpx;
-  margin-bottom: 32rpx;
-  padding: 32rpx 28rpx 24rpx 28rpx;
+  width: 48%;
+  margin-bottom: 24rpx;
+  padding: 24rpx 20rpx 20rpx;
   box-sizing: border-box;
-  transition: box-shadow 0.2s;
-  display: inline-block;
+  border-radius: 20rpx;
+  background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.22),
+      rgba(255, 255, 255, 0.10)
+  );
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4rpx 12rpx rgba(26, 45, 110, 0.20);
+  color: #ffffff;
 }
 
-@media (min-width: 500rpx) {
-  .timeline-card {
-    max-width: 48%;
-  }
-}
-
+/* 卡片头部：icon + 标题 */
 .card-header {
   display: flex;
   align-items: center;
-  margin-bottom: 18rpx;
+  margin-bottom: 14rpx;
 }
 
 .card-icon {
-  width: 56rpx;
-  height: 56rpx;
+  width: 52rpx;
+  height: 52rpx;
   border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36rpx;
-  margin-right: 16rpx;
+  font-size: 34rpx;
+  margin-right: 14rpx;
+  /* 背景还是用 item.bgColor（外面 :style 已经传进来） */
 }
 
 .card-title {
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: 600;
-  color: #222;
+  color: #ffffff;
 }
 
+/* 描述：稍微淡一点 */
 .card-desc {
-  font-size: 26rpx;
-  color: #6b7a8f;
-  margin-bottom: 18rpx;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 10rpx;
 }
 
+/* 标签 */
 .card-tags {
-  margin-bottom: 18rpx;
+  margin-bottom: 12rpx;
 }
 
 .card-tag {
   font-size: 22rpx;
-  color: #338aff;
-  background: #eaf3ff;
-  border-radius: 10rpx;
-  padding: 4rpx 18rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
+/* 底部信息：更弱一点 */
 .card-footer {
   display: flex;
   justify-content: space-between;
   font-size: 22rpx;
-  color: #b0b8c9;
-  margin-top: 8rpx;
+  color: rgba(255, 255, 255, 0.82);
 }
 
-/* 弹框样式 */
+.card-date,
+.card-count {
+  white-space: nowrap;
+}
+
+/* ===== 弹框和授权弹窗，保持原来的白色风格即可 ===== */
+
 .modal {
   position: fixed;
   top: 0;
@@ -641,7 +701,7 @@ export default {
   color: #fff;
 }
 
-/* 授权弹窗样式 */
+/* 授权弹窗 */
 .auth-modal {
   position: fixed;
   top: 0;
@@ -755,4 +815,7 @@ export default {
   color: #fff;
 }
 </style>
+
+
+
 

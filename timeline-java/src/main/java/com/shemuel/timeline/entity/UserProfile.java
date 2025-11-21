@@ -78,4 +78,7 @@ public class UserProfile implements Serializable {
 
     @Schema(description = "微信开放平台统一标识")
     private String unionid;
+
+    @Schema(description = "utools平台Id")
+    private String utoolsId;
 }

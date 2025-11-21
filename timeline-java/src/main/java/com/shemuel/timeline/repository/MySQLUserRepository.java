@@ -76,6 +76,14 @@ public class MySQLUserRepository implements UserRepository {
     }
 
     @Override
+    public Optional<UserProfile> findByUtoolsId(String utoolsId) {
+        LambdaQueryWrapper<UserProfile> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserProfile::getUtoolsId, utoolsId);
+        UserProfile userProfile = userProfileMapper.selectOne(queryWrapper);
+        return Optional.ofNullable(userProfile);
+    }
+
+    @Override
     public Optional<UserProfile> findByUsername(String username) {
         LambdaQueryWrapper<UserProfile> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(UserProfile::getUserName, username);

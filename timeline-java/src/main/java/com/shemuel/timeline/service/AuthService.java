@@ -42,6 +42,10 @@ public class AuthService {
 
     // 你原来的 login / checkPassword 省略...
 
+    public UserProfile loginOrRegisterByUtoolsToken(String token) {
+        return userService.loginOrRegisterByUtoolsToken(token);
+    }
+
     /**
      * 小程序微信登录
      */
