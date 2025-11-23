@@ -4,16 +4,20 @@ import com.shemuel.timeline.common.CustomMode;
 import com.shemuel.timeline.common.RepeatType;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.entity.TUserReminderItem;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.*;
 import java.util.List;
 import java.util.Objects;
+
+
 
 /**
  * @Author: dengshaoxiang
  * @Date: 2025-11-13-15:01
  * @Description:
  */
+@Slf4j
 public class ScheduleUtil {
     private static final long day_seconds = 24 * 60 * 60 * 1000L;
 
@@ -154,6 +158,12 @@ public class ScheduleUtil {
 
         // 1. 今天窗口内：尝试下一个时间点
         LocalDateTime sameDayNext = curr.plusMinutes(circleMinutes);
+
+        while (sameDayNext.isBefore(LocalDateTime.now())){
+            log.info("时间为过去时间，自动增加interval {}", circleMinutes);
+            sameDayNext = sameDayNext.plusMinutes(circleMinutes);
+        }
+
 
         boolean sameDay = sameDayNext.toLocalDate().isEqual(currDate);
         boolean withinWindow = !sameDayNext.toLocalTime().isAfter(circleEndTime);

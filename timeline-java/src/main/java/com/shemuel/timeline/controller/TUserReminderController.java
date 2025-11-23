@@ -1,14 +1,20 @@
 package com.shemuel.timeline.controller;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.shemuel.timeline.common.Constants;
 import com.shemuel.timeline.common.CustomMode;
 import com.shemuel.timeline.common.RepeatType;
+import com.shemuel.timeline.common.WindowPosition;
 import com.shemuel.timeline.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.service.TUserReminderService;
@@ -22,10 +28,19 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/t-user-reminder")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "用户提醒表主表， 只记录用户需要的提醒类型，方式管理")
 public class TUserReminderController {
 
     private final TUserReminderService tUserReminderService;
+
+
+    @PostMapping("/addBySentence")
+    @Operation(summary = "一句话创建提醒")
+    public RestResult<Object> addBySentence(@RequestBody TUserReminder tUserReminder ) {
+        log.info("一句话创建提醒 {}", tUserReminder.getContent());
+        return RestResult.success("ok");
+    }
 
     @GetMapping("/list")
     @Operation(summary = "获取用户提醒表主表， 只记录用户需要的提醒类型，方式列表")
@@ -88,5 +103,21 @@ public class TUserReminderController {
                 throw new ServiceException("请选择每年哪些天");
             }
         }
+
+        if (Objects.nonNull(tUserReminder.getNotifyDesktopPosition())){
+            if (WindowPosition.positionMap.get(tUserReminder.getNotifyDesktopPosition()) == null){
+                tUserReminder.setNotifyDesktopPosition(0);
+            }
+        }
+
+
+        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatType.NONE)
+                && Objects.equals(tUserReminder.getDoCircle(), Constants.NO_active)){
+            if (StringUtils.isEmpty(tUserReminder.getSpecifyTimes()) && tUserReminder.getRemindTime().isBefore(LocalDateTime.now())){
+                throw new ServiceException("当前首次提醒时间无效");
+            }
+        }
+
     }
+
 }

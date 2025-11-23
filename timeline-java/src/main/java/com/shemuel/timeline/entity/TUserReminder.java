@@ -32,18 +32,19 @@ public class TUserReminder implements Serializable {
     private String content;
 
     @Schema(description = "提醒时间")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime remindTime;
 
-    @Schema(description = "重复规则：NONE, DAILY, WEEKLY, MONTHLY, YEARLY,WORKDAY, WEEKEND, CUSTOM")
+    @Schema(description = "重复规则：NONE, DAILY, WEEKLY, MONTHLY, YEARLY,WORKDAY, CUSTOM")
     private String repeatRule;
 
-    @Schema(description = "当前 支持， BIRTHDAY, ANNIVERSARY 自定义模式：生日，纪念日，他俩的处理方式一模一样")
+    @Schema(description = "当重复规则是自定义时，WEEKLY, YEARLY, MEDICINE,ANNIVERSARY 自定义模式： 按月，按年， 用药提醒，纪念日")
     private String customMode;
 
     @Schema(description = "提起几天提醒")
     private Integer advanceDays;
 
-    @Schema(description = "间隔数，如每2天/每2周, 前端 展示没有实现， 后端默认按1处理 ")
+    @Schema(description = "间隔数，如每2天/每2周")
     private Integer repeatInterval;
 
     @Schema(description = "每周的星期几")
@@ -52,7 +53,7 @@ public class TUserReminder implements Serializable {
     @Schema(description = "每月的哪几天，逗号分隔")
     private String repeatMonthDays;
 
-    @Schema(description = "每年的哪些天 逗号分隔")
+    @Schema(description = "自定义某年的哪些天 逗号分隔")
     private String specifyDates;
 
     @Schema(description = "自定义当天的哪几个时间， 逗号分隔")
@@ -68,9 +69,11 @@ public class TUserReminder implements Serializable {
     private Integer doCircle;
 
     @Schema(description = "循环开始时间")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime circleBegin;
 
     @Schema(description = "循环结束时间")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime circleEnd;
 
     @Schema(description = "循环间隔，如 20， 单位分钟")
@@ -92,9 +95,11 @@ public class TUserReminder implements Serializable {
     private String notifySoundFile;
 
     @Schema(description = "")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
     @Schema(description = "")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
     @Schema(description = "提醒钩子")
@@ -102,4 +107,19 @@ public class TUserReminder implements Serializable {
 
     @Schema(description = "")
     private String webhookMethod;
+
+    @Schema(description = "弹窗位置,0:中间，1，左上，2 左下，3，右上，4，右下")
+    private Integer notifyDesktopPosition;
+
+    @Schema(description = "企业微信机器人url")
+    private String notifyWecomBot;
+
+    @Schema(description = "钉钉机器人钩子")
+    private String notifyDingdingBot;
+
+    @Schema(description = "企微机器人是否开启")
+    private Integer wecomBotEnable;
+
+    @Schema(description = "钉钉机器人是否开启")
+    private Integer dingdingBotEnable;
 }

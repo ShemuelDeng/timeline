@@ -34,9 +34,6 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
     private TUserReminderItemService tUserReminderItemService;
 
     @Autowired
-    private WeComRobotTool weComRobotTool;
-
-    @Autowired
     private ReminderPushService reminderPushService;
 
     @Autowired
@@ -71,34 +68,50 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
         }
         // 查询主表
         TUserReminder remind = tUserReminderMapper.selectById(remindItem.getMainId());
-        if (remind == null || Objects.equals(remind.getActive(), Constants.NO_active) ) {
+        if (remind == null ) {
             return;
         }
-
-        reminderPushService.pushReminder(remindItem);
-
+        if (Objects.equals(remind.getActive(), Constants.active) ){
+            reminderPushService.pushReminder(remind, remindItem);
+        }
 
 
         // 3. 根据子项计算下一次提醒时间，并推进每个子项的 remindTime
         Long nextRemindTime = ScheduleUtil.getNextRemindTime(remind, remindItem);
         if (nextRemindTime == null) {
-            log.info("任务提醒，user:{}, 内容：{}, 本提醒任务已完结，无下次提醒：{}");
+            log.info("任务提醒，user:{}, userId：{}, 本提醒任务已完结，无下次提醒", userId,remind.getId());
+            remindItem.setStatus(RemindStatus.EXPIRED);
+            remindItem.setUpdateTime(LocalDateTime.now());
+            tUserReminderItemService.updateById(remindItem);
+            checkAndSetMainStatus(remind);
             // 更新状态
             return;
         }
 
 
-        remind.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
-        remindItem.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
-
-        remind.setUpdateTime(LocalDateTime.now());
-        remindItem.setUpdateTime(LocalDateTime.now());
-        tUserReminderMapper.updateById(remind);
-        tUserReminderItemService.updateById(remindItem);
-
-        // 5. 有下次提醒时间的话，重新加入队列
+        // 4. 有下次提醒时间的话，重新加入队列
         schedule(nextRemindTime, userId, remindItem.getId());
+
+        // 更新
+        remindItem.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
+        remindItem.setUpdateTime(LocalDateTime.now());
+        tUserReminderItemService.updateById(remindItem);
         log.info("任务提醒，user:{}, 内容：{}, 下次提醒时间：{}",
                 userId, remind.getTitle(), remindItem.getRemindTime());
+    }
+
+    private void checkAndSetMainStatus(TUserReminder remind ){
+        TUserReminderItem param = new TUserReminderItem();
+        param.setMainId(remind.getId());
+        List<TUserReminderItem> items = tUserReminderItemService.selectList(param);
+
+        boolean noExpire = items.stream().anyMatch(i -> !Objects.equals(i.getStatus(), RemindStatus.EXPIRED));
+        if (!noExpire){
+            remind.setStatus(RemindStatus.EXPIRED);
+            tUserReminderMapper.updateById(remind);
+            log.info("当前任务无下次提醒时间， 已过期，{}", remind.getId());
+        }
+
+
     }
 }

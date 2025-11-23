@@ -1,6 +1,7 @@
 package com.shemuel.timeline.config;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.shemuel.timeline.common.WindowPosition;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.tools.wx.WeComRobotTool;
@@ -22,16 +23,18 @@ public class ReminderPushService {
         private Long reminderId;
         private String title;
         private String content;
+        private String position;
         @JSONField(format = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime remindTime;
     }
 
-    public void pushReminder(TUserReminderItem remind) {
+    public void pushReminder(TUserReminder tUserReminder, TUserReminderItem remind) {
         ReminderMsg msg = new ReminderMsg();
         msg.setReminderId(remind.getId());
         msg.setTitle(remind.getTitle());
         msg.setContent(remind.getContent());
         msg.setRemindTime(remind.getRemindTime());
+        msg.setPosition(WindowPosition.positionMap.get(tUserReminder.getNotifyDesktopPosition()));
 
         try {
             // ws推送
@@ -41,7 +44,7 @@ public class ReminderPushService {
         }
 
         // 企微推送
-        String notifyText = "来自utools提醒助手 \n" + remind.getTitle() + " \n" + remind.getContent();
+        String notifyText = "来自utools提醒助手 \n" + remind.getTitle() + " \n" + remind.getContent() + "\n" + remind.getRemindTime();
         // 1. 发送提醒（这里你后面可以接入真正的桌面弹窗 / 微信 / Webhook 等）
         weComRobotTool.sendGroupMessage(notifyText);
     }

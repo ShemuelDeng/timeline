@@ -1,5 +1,6 @@
 package com.shemuel.timeline.schedule;
 
+import com.shemuel.timeline.utils.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.DisposableBean;
@@ -114,7 +115,7 @@ public abstract class ZSetDelayScheduler implements Runnable, InitializingBean, 
     protected void schedule(Long time, String... taskPayloads) {
         redisTemplate.opsForZSet().add(zSetKey, getZSetValue(taskPayloads), time);
         redisTemplate.expire(zSetKey, delayKeyExpireTime(), TimeUnit.MINUTES);
-        log.info("添加定时任务: {}, {}", zSetKey, String.join(", ", taskPayloads));
+        log.info("添加定时任务: {}, {},{}", zSetKey, String.join(", ", taskPayloads), DateUtil.fromTimestamp(time));
     }
 
     /**

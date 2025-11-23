@@ -57,7 +57,14 @@ CREATE TABLE t_user_reminder (
     circle_interval TINYINT(1) DEFAULT 20 COMMENT '循环间隔，如 20， 单位分钟',
 
     notify_desktop  TINYINT(1) NOT NULL DEFAULT 1 COMMENT '桌面弹窗',
+    notify_desktop_position  TINYINT(1)  DEFAULT 0 COMMENT '弹窗位置,0:中间，1，左上，2 左下，3，右上，4，右下',
     notify_wx  TINYINT(1) NOT NULL DEFAULT 1 COMMENT '微信提醒',
+    notify_wecom_bot  VARCHAR(1024) NOT NULL DEFAULT 1 COMMENT '企业微信机器人url',
+    notify_dingding_bot  VARCHAR(1024) NOT NULL DEFAULT 1 COMMENT '钉钉机器人url',
+
+    wecom_bot_enable  TINYINT(1) DEFAULT 0 COMMENT '企业微信机器人url是否开启',
+    dingding_bot_enable  TINYINT(1) DEFAULT 0  COMMENT '钉钉机器人url是否开启',
+
     notify_sound    TINYINT(1) NOT NULL DEFAULT 1 COMMENT '声音提醒',
     notify_system   TINYINT(1) NOT NULL DEFAULT 0 COMMENT '系统通知/托盘气泡',
     notify_sound_file    varchar(128) DEFAULT NULL  COMMENT '声音文件',

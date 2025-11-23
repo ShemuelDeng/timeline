@@ -48,4 +48,9 @@ public class TUserReminderItem implements Serializable {
 
     @Schema(description = "")
     private LocalDateTime updateTime;
+
+
+    @Schema(description = "提醒状态，0：待提醒，1：已过期，2：已完成")
+    private Integer status;
+
 }

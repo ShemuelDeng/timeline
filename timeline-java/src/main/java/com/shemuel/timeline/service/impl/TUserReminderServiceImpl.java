@@ -17,6 +17,7 @@ import com.shemuel.timeline.exception.ServiceException;
 import com.shemuel.timeline.schedule.UserRemindScheduler;
 import com.shemuel.timeline.service.TUserReminderItemService;
 import com.shemuel.timeline.utils.DateUtil;
+import com.shemuel.timeline.utils.ScheduleUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -158,12 +159,32 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         if (!items.isEmpty()) {
             tUserReminderItemService.saveBatch(items);
 
+            boolean expired = false;
             for (TUserReminderItem item : items) {
-                userRemindScheduler.schedule(
-                        DateUtil.toTimestamp(item.getRemindTime()),
-                        item.getId(),
-                        tUserReminder.getId()
-                );
+
+                if (tUserReminder.getRemindTime().isBefore(LocalDateTime.now())){
+                    Long nextRemindTime = ScheduleUtil.getNextRemindTime(tUserReminder, item );
+                    if (nextRemindTime == null) {
+                        expired = true;
+                    }
+                    userRemindScheduler.schedule(
+                            nextRemindTime,
+                            item.getId(),
+                            tUserReminder.getId()
+                    );
+
+                }else{
+                    userRemindScheduler.schedule(
+                            DateUtil.toTimestamp(item.getRemindTime()),
+                            item.getId(),
+                            tUserReminder.getId()
+                    );
+                }
+
+            }
+            if (expired){
+                tUserReminder.setStatus(RemindStatus.EXPIRED);
+                updateById(tUserReminder);
             }
         }
 
