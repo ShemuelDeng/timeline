@@ -23,4 +23,13 @@ public class WxUtils {
         return wxBaseResp;
     }
 
+
+    public static WxBaseResp sendWebhookMsgByUrl(String url, WebhookSendMsgReq webhookSendMsgReq) {
+
+        WxBaseResp wxBaseResp = JSON.parseObject(HttpUtil.post(url, JSONObject.toJSONString(webhookSendMsgReq)), WxBaseResp.class);
+        if(!wxBaseResp.hasSuccess()){
+            log.warn("sendWebhookMsgError|{}|{}|{}", url, JSONObject.toJSONString(webhookSendMsgReq), wxBaseResp.getErrmsg());
+        }
+        return wxBaseResp;
+    }
 }

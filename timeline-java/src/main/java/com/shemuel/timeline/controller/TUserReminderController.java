@@ -10,6 +10,7 @@ import com.shemuel.timeline.common.Constants;
 import com.shemuel.timeline.common.CustomMode;
 import com.shemuel.timeline.common.RepeatType;
 import com.shemuel.timeline.common.WindowPosition;
+import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,6 +47,7 @@ public class TUserReminderController {
     @Operation(summary = "获取用户提醒表主表， 只记录用户需要的提醒类型，方式列表")
     public RestResult<IPage<TUserReminder>> list(TUserReminder tUserReminder) {
         tUserReminder.setUserId(StpUtil.getLoginIdAsLong());
+        tUserReminder.setVisible(Constants.active);
         return RestResult.success(tUserReminderService.selectPage(tUserReminder));
     }
 
@@ -58,10 +60,24 @@ public class TUserReminderController {
     @PostMapping("/add")
     @Operation(summary = "添加用户提醒表主表， 只记录用户需要的提醒类型，方式")
     public RestResult<Object> add(@RequestBody TUserReminder tUserReminder) {
-        checkParams(tUserReminder);
 
         tUserReminder.setUserId(StpUtil.getLoginIdAsLong());
         return RestResult.success(tUserReminderService.insert(tUserReminder));
+    }
+
+    @PostMapping("/remindAgain")
+    @Operation(summary = "添加用户提醒表主表， 只记录用户需要的提醒类型，方式")
+    public RestResult<Object> remindAgain(@RequestBody TUserReminder tUserReminder) {
+        TUserReminder oldReminder = tUserReminderService.getById(tUserReminder.getId());
+
+        oldReminder.setId(null);
+        oldReminder.setRepeatRule(RepeatType.NONE);
+        oldReminder.setDoCircle(Constants.NO_active);
+        oldReminder.setRemindTime(LocalDateTime.now().plusMinutes(10));
+        oldReminder.setVisible(Constants.NO_active);
+        oldReminder.setUserId(StpUtil.getLoginIdAsLong());
+        oldReminder.setSpecifyTimes(null);
+        return RestResult.success(tUserReminderService.insert(oldReminder));
     }
 
     @PutMapping("/update")

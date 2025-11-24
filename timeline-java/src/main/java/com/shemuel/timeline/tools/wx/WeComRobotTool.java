@@ -21,4 +21,12 @@ public class WeComRobotTool {
         WebhookSendMsgReq webhookSendMsgReq = WebhookSendMsgReq.text(message);
         return WxUtils.sendWebhookMsg(robotKey,webhookSendMsgReq);
     }
+
+
+    public WxBaseResp sendGroupMessageByUrl(String url, String message) {
+        // 使用 webhookUrl 调用微信群机器人的 HTTP 接口
+        log.info("sendGroupMessage invoked {}",  message);
+        WebhookSendMsgReq webhookSendMsgReq = WebhookSendMsgReq.text(message);
+        return WxUtils.sendWebhookMsgByUrl(url,webhookSendMsgReq);
+    }
 }

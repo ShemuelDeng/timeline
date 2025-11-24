@@ -122,4 +122,10 @@ public class TUserReminder implements Serializable {
 
     @Schema(description = "钉钉机器人是否开启")
     private Integer dingdingBotEnable;
+
+    @Schema(description = "webhooke是否开启")
+    private Integer webhookEnable;
+
+    @Schema(description = "是否可见")
+    private Integer visible;
 }

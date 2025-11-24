@@ -67,6 +67,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         wrapper.eq(tUserReminder.getSpecifyTimes() != null, TUserReminder::getSpecifyTimes, tUserReminder.getSpecifyTimes());
         wrapper.eq(tUserReminder.getStatus() != null, TUserReminder::getStatus, tUserReminder.getStatus());
         wrapper.eq(tUserReminder.getActive() != null, TUserReminder::getActive, tUserReminder.getActive());
+        wrapper.eq(tUserReminder.getVisible() != null, TUserReminder::getVisible, tUserReminder.getVisible());
         wrapper.eq(tUserReminder.getDoCircle() != null, TUserReminder::getDoCircle, tUserReminder.getDoCircle());
         wrapper.eq(tUserReminder.getCircleBegin() != null, TUserReminder::getCircleBegin, tUserReminder.getCircleBegin());
         wrapper.eq(tUserReminder.getCircleEnd() != null, TUserReminder::getCircleEnd, tUserReminder.getCircleEnd());
@@ -169,15 +170,15 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
                     }
                     userRemindScheduler.schedule(
                             nextRemindTime,
-                            item.getId(),
-                            tUserReminder.getId()
+                            tUserReminder.getUserId(),
+                            item.getId()
                     );
 
                 }else{
                     userRemindScheduler.schedule(
                             DateUtil.toTimestamp(item.getRemindTime()),
-                            item.getId(),
-                            tUserReminder.getId()
+                            tUserReminder.getUserId(),
+                            item.getId()
                     );
                 }
 
