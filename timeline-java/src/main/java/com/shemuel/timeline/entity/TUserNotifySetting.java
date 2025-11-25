@@ -31,6 +31,20 @@ public class TUserNotifySetting implements Serializable {
     @Schema(description = "Bark 推送 URL")
     private String barkUrl;
 
+    @Schema(description = "Bark 默认开启：1 开启，0 关闭")
+    private Integer barkEnabledDefault;
+
+    @Schema(description = "企业微信机器人默认开启：1 开启，0 关闭")
+    private Integer wecomEnabledDefault;
+
+    @Schema(description = "钉钉机器人默认开启：1 开启，0 关闭")
+    private Integer dingdingEnabledDefault;
+
+    @Schema(description = "通用 Webhook 默认开启：1 开启，0 关闭")
+    private Integer webhookEnabledDefault;
+
+    @Schema(description = "钉钉机器人加签 Secret")
+    private String dingdingSecret;
 
     @Schema(description = "")
     private LocalDateTime createTime;

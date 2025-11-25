@@ -45,6 +45,14 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
         return "user-remind";
     }
 
+    public void cancelByMainId(Long mainId) {
+        List<TUserReminderItem> subItems = tUserReminderItemService
+                .list(new LambdaQueryWrapper<TUserReminderItem>().eq(TUserReminderItem::getMainId, mainId));
+
+        for (TUserReminderItem subItem : subItems) {
+            cancelSchedule(String.valueOf(subItem.getUserId()), String.valueOf(subItem.getId()));
+        }
+    }
 
 
 
@@ -71,7 +79,7 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
         if (remind == null ) {
             return;
         }
-        if (Objects.equals(remind.getActive(), Constants.active) ){
+        if (Objects.equals(remind.getStatus(), Constants.active) ){
             reminderPushService.pushReminder(remind, remindItem);
         }
 
@@ -107,11 +115,16 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
 
         boolean noExpire = items.stream().anyMatch(i -> !Objects.equals(i.getStatus(), RemindStatus.EXPIRED));
         if (!noExpire){
-            remind.setStatus(RemindStatus.EXPIRED);
-            tUserReminderMapper.updateById(remind);
+
+            if (Objects.equals(remind.getVisible(), Constants.active)){
+                remind.setStatus(RemindStatus.EXPIRED);
+                tUserReminderMapper.updateById(remind);
+            }else{
+                // 删主表
+                tUserReminderMapper.deleteById(remind.getId());
+                tUserReminderItemService.deleteByMainId(remind.getId());
+            }
             log.info("当前任务无下次提醒时间， 已过期，{}", remind.getId());
         }
-
-
     }
 }

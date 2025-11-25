@@ -2,6 +2,8 @@ package com.shemuel.timeline.controller;
 
 import java.util.List;
 
+import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -22,21 +24,19 @@ public class TUserNotifySettingController {
 
     private final TUserNotifySettingService tUserNotifySettingService;
 
-    @GetMapping("/list")
-    @Operation(summary = "获取用户通知渠道配置表列表")
-    public RestResult<IPage<TUserNotifySetting>> list(TUserNotifySetting tUserNotifySetting) {
-        return RestResult.success(tUserNotifySettingService.selectPage(tUserNotifySetting));
-    }
 
-    @GetMapping("/{id}")
+    @GetMapping("/mySetting")
     @Operation(summary = "获取用户通知渠道配置表详情")
-    public RestResult<TUserNotifySetting> getInfo(@PathVariable("id") Long id) {
-        return RestResult.success(tUserNotifySettingService.getById(id));
+    public RestResult<TUserNotifySetting> getInfo() {
+        return RestResult.success(tUserNotifySettingService
+                .getOne(new LambdaQueryWrapper<TUserNotifySetting>()
+                        .eq(TUserNotifySetting::getUserId, StpUtil.getLoginIdAsLong())));
     }
 
     @PostMapping("/add")
     @Operation(summary = "添加用户通知渠道配置表")
     public RestResult<Object> add(@RequestBody TUserNotifySetting tUserNotifySetting) {
+        tUserNotifySetting.setUserId(StpUtil.getLoginIdAsLong());
         return RestResult.success(tUserNotifySettingService.insert(tUserNotifySetting));
     }
 
@@ -46,9 +46,4 @@ public class TUserNotifySettingController {
         return RestResult.success(tUserNotifySettingService.update(tUserNotifySetting));
     }
 
-    @DeleteMapping("/delete/{ids}")
-    @Operation(summary = "删除用户通知渠道配置表")
-    public RestResult<Object> remove(@PathVariable List<Long> ids) {
-        return RestResult.success(tUserNotifySettingService.deleteByIds(ids));
-    }
 }

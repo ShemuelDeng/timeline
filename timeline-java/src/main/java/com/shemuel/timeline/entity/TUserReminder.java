@@ -59,11 +59,8 @@ public class TUserReminder implements Serializable {
     @Schema(description = "自定义当天的哪几个时间， 逗号分隔")
     private String specifyTimes;
 
-    @Schema(description = "提醒状态，0：待提醒，1：已过期，2：已完成")
-    private Integer status;
-
-    @Schema(description = "是否开启：1：开启， 0：关闭")
-    private Integer active;
+    @Schema(description = "提醒状态，0：已关闭，1：已开启，2：已过期")
+    private Integer status = 1;
 
     @Schema(description = "是否循环：1：开启， 0：关闭")
     private Integer doCircle;
@@ -126,6 +123,6 @@ public class TUserReminder implements Serializable {
     @Schema(description = "webhooke是否开启")
     private Integer webhookEnable;
 
-    @Schema(description = "是否可见")
+    @Schema(description = "是否可见, 用于10分钟后再提醒，临时创建一个一次性的，， 前端不可见的任务，到期后会自动删除")
     private Integer visible;
 }

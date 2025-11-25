@@ -33,4 +33,6 @@ public interface TUserReminderItemService extends IService<TUserReminderItem> {
      * 批量删除用户提醒表子表， 主要记录由主表产生的确切的提示项
      */
     boolean deleteByIds(List<Long> ids);
+
+    boolean deleteByMainId(Long mainId);
 }

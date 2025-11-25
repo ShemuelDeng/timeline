@@ -79,7 +79,7 @@ public class ReminderPushService {
                 + remind.getRemindTime();
 
         // 3. 企业微信 —— 不同渠道互不影响，独立 try/catch
-        if (tUserReminder.getWecomBotEnable() == Constants.active) {
+        if (setting.getWecomEnabledDefault() == Constants.active || tUserReminder.getWecomBotEnable() == Constants.active) {
             String url = tUserReminder.getNotifyWecomBot();
             if (StringUtils.isBlank(url) && setting != null) {
                 url = setting.getWecomBotUrl();
@@ -93,12 +93,12 @@ public class ReminderPushService {
                             userId, url, e.getMessage(), e);
                 }
             } else {
-                log.debug("企微推送跳过，userId={}，未配置 webhook", userId);
+                log.warn("企微推送跳过，userId={}，未配置 webhook", userId);
             }
         }
 
         // 4. 钉钉推送（示例）
-        if (tUserReminder.getDingdingBotEnable() == Constants.active) {
+        if (tUserReminder.getDingdingBotEnable() == Constants.active || setting.getDingdingEnabledDefault() == Constants.active) {
             String url = tUserReminder.getNotifyDingdingBot();
             if (StringUtils.isBlank(url) && setting != null) {
                 url = setting.getDingdingBotUrl();
@@ -106,18 +106,18 @@ public class ReminderPushService {
 
             if (StringUtils.isNotBlank(url)) {
                 try {
-                    // dingTalkRobotTool.sendByUrl(url, notifyText);
+                     dingTalkRobotTool.sendTextByUrl(url, notifyText);
                 } catch (Exception e) {
                     log.error("钉钉推送失败，userId={}，url={}，err={}",
                             userId, url, e.getMessage(), e);
                 }
             } else {
-                log.debug("钉钉推送跳过，userId={}，未配置 webhook", userId);
+                log.warn("钉钉推送跳过，userId={}，未配置 webhook", userId);
             }
         }
 
 //        // 5. Bark 推送（示例）
-        if (tUserReminder.getWebhookEnable() == Constants.active) {
+        if (tUserReminder.getWebhookEnable() == Constants.active || setting.getBarkEnabledDefault() == Constants.active) {
             String url = tUserReminder.getWebhook();
             if (StringUtils.isBlank(url) && setting != null) {
                 url = setting.getBarkUrl();
@@ -131,7 +131,7 @@ public class ReminderPushService {
                             userId, url, e.getMessage(), e);
                 }
             } else {
-                log.debug("Bark 推送跳过，userId={}，未配置 url", userId);
+                log.warn("Bark 推送跳过，userId={}，未配置 url", userId);
             }
         }
 

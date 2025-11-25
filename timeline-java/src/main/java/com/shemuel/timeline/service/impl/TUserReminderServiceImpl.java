@@ -66,7 +66,6 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         wrapper.eq(tUserReminder.getSpecifyDates() != null, TUserReminder::getSpecifyDates, tUserReminder.getSpecifyDates());
         wrapper.eq(tUserReminder.getSpecifyTimes() != null, TUserReminder::getSpecifyTimes, tUserReminder.getSpecifyTimes());
         wrapper.eq(tUserReminder.getStatus() != null, TUserReminder::getStatus, tUserReminder.getStatus());
-        wrapper.eq(tUserReminder.getActive() != null, TUserReminder::getActive, tUserReminder.getActive());
         wrapper.eq(tUserReminder.getVisible() != null, TUserReminder::getVisible, tUserReminder.getVisible());
         wrapper.eq(tUserReminder.getDoCircle() != null, TUserReminder::getDoCircle, tUserReminder.getDoCircle());
         wrapper.eq(tUserReminder.getCircleBegin() != null, TUserReminder::getCircleBegin, tUserReminder.getCircleBegin());
@@ -106,7 +105,6 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         wrapper.eq(tUserReminder.getSpecifyDates() != null, TUserReminder::getSpecifyDates, tUserReminder.getSpecifyDates());
         wrapper.eq(tUserReminder.getSpecifyTimes() != null, TUserReminder::getSpecifyTimes, tUserReminder.getSpecifyTimes());
         wrapper.eq(tUserReminder.getStatus() != null, TUserReminder::getStatus, tUserReminder.getStatus());
-        wrapper.eq(tUserReminder.getActive() != null, TUserReminder::getActive, tUserReminder.getActive());
         wrapper.eq(tUserReminder.getDoCircle() != null, TUserReminder::getDoCircle, tUserReminder.getDoCircle());
         wrapper.eq(tUserReminder.getCircleBegin() != null, TUserReminder::getCircleBegin, tUserReminder.getCircleBegin());
         wrapper.eq(tUserReminder.getCircleEnd() != null, TUserReminder::getCircleEnd, tUserReminder.getCircleEnd());
@@ -167,6 +165,8 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
                     Long nextRemindTime = ScheduleUtil.getNextRemindTime(tUserReminder, item );
                     if (nextRemindTime == null) {
                         expired = true;
+                    }else{
+                        expired = false;
                     }
                     userRemindScheduler.schedule(
                             nextRemindTime,
@@ -451,53 +451,6 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
 
     /**
-     * 自定义时间点（用药提示：每天多次）
-     * main.specifyTimes 例如: "08:00,12:00,18:00"
-     */
-    private List<TUserReminderItem> buildSpecifyTimeItems(TUserReminder main) {
-        String specifyTimes = main.getSpecifyTimes();
-        if (specifyTimes == null || specifyTimes.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        LocalDateTime base = main.getRemindTime();
-        LocalDate baseDate = base.toLocalDate();
-
-        List<TUserReminderItem> result = new ArrayList<>();
-
-        String[] times = specifyTimes.split(",");
-        for (String t : times) {
-            String timeStr = t.trim();
-            if (timeStr.isEmpty()) {
-                continue;
-            }
-            // 支持 "HH:mm" 或 "HH:mm:ss"
-            LocalTime time;
-            if (timeStr.length() == 5) {
-                time = LocalTime.parse(timeStr); // 08:00
-            } else {
-                time = LocalTime.parse(timeStr); // 08:00:00
-            }
-
-            LocalDateTime remindTime = LocalDateTime.of(baseDate, time);
-
-            // 如果当天这个时间已经过去，可以看业务需求决定：是从明天开始，还是仍保留今天
-            if (remindTime.isBefore(base)) {
-                remindTime = remindTime.plusDays(1);
-            }
-
-            TUserReminderItem item = baseItemFromMain(main);
-            item.setRemindTime(remindTime);
-            // 用药场景一般是“每天这些时间点”
-            item.setRepeatRule(RepeatType.DAILY);
-
-            result.add(item);
-        }
-
-        return result;
-    }
-
-    /**
      * 解析主表上的时间点：
      * - 如果 specifyTimes 不为空：按 "HH:mm" / "HH:mm:ss" 解析
      * - 否则：使用 main.remindTime 的时间部分
@@ -566,153 +519,6 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         return result;
     }
 
-
-    private List<TUserReminderItem> buildMultiItemRepeatItems(TUserReminder main) {
-        switch (main.getRepeatRule()) {
-            case RepeatType.WEEKLY:
-                return buildWeeklyItems(main);
-            case RepeatType.MONTHLY:
-                return buildMonthlyItems(main);
-            case RepeatType.YEARLY:
-                return buildYearlyItems(main);
-            default:
-                return Collections.emptyList();
-        }
-    }
-
-    /**
-     * 每周：repeat_weekdays 存的是 '1'..'7'
-     */
-    private List<TUserReminderItem> buildWeeklyItems(TUserReminder main) {
-        Set<String> weekdays = new HashSet<>(JSON.parseArray(main.getRepeatWeekdays(), String.class));
-        if (weekdays == null || weekdays.isEmpty()) {
-            // 没配置星期几，就退化成单条
-            return Collections.singletonList(buildSingleItem(main));
-        }
-
-        LocalDateTime base = main.getRemindTime();
-        LocalDate baseDate = base.toLocalDate();
-        LocalTime baseTime = base.toLocalTime();
-        int baseDow = baseDate.getDayOfWeek().getValue(); // 1=Monday .. 7=Sunday
-
-        List<TUserReminderItem> result = new ArrayList<>();
-        for (String w : weekdays) {
-            int targetDow = Integer.parseInt(w);
-            int diff = targetDow - baseDow;
-            if (diff < 0) {
-                diff += 7;
-            }
-            LocalDate targetDate = baseDate.plusDays(diff);
-
-            TUserReminderItem item = baseItemFromMain(main);
-            item.setRemindTime(LocalDateTime.of(targetDate, baseTime));
-            item.setRepeatRule(RepeatType.WEEKLY);
-            // 间隔（每2周/每3周）继承主表
-            item.setRepeatInterval(main.getRepeatInterval());
-            result.add(item);
-        }
-        return result;
-    }
-
-    /**
-     * 每月：repeat_month_days 为 "1,10,20"
-     */
-    private List<TUserReminderItem> buildMonthlyItems(TUserReminder main) {
-        String monthDays = main.getRepeatMonthDays();
-        if (monthDays == null || monthDays.isEmpty()) {
-            return Collections.singletonList(buildSingleItem(main));
-        }
-
-        LocalDateTime base = main.getRemindTime();
-        LocalDate baseDate = base.toLocalDate();
-        LocalTime baseTime = base.toLocalTime();
-
-        List<TUserReminderItem> result = new ArrayList<>();
-        String[] days = monthDays.split(",");
-        for (String d : days) {
-            String dayStr = d.trim();
-            if (dayStr.isEmpty()) continue;
-
-            int dayOfMonth = Integer.parseInt(dayStr);
-
-            LocalDate candidate;
-            try {
-                candidate = baseDate.withDayOfMonth(dayOfMonth);
-            } catch (DateTimeException e) {
-                // 比如 2 月没有 30 号，可以根据需求选择：跳过 或者取该月最后一天
-                continue;
-            }
-
-            // 如果这个日期已经过去，从下个月开始
-            if (candidate.isBefore(baseDate)) {
-                candidate = candidate.plusMonths(1);
-            }
-
-            TUserReminderItem item = baseItemFromMain(main);
-            item.setRemindTime(LocalDateTime.of(candidate, baseTime));
-            item.setRepeatRule(RepeatType.MONTHLY);
-            item.setRepeatInterval(main.getRepeatInterval());
-            result.add(item);
-        }
-
-        if (result.isEmpty()) {
-            return Collections.singletonList(buildSingleItem(main));
-        }
-        return result;
-    }
-
-    /**
-     * 每年：优先使用 specify_dates（如 "06-01,12-25" 或 "2025-06-01"）
-     */
-    private List<TUserReminderItem> buildYearlyItems(TUserReminder main) {
-        String specifyDates = main.getSpecifyDates();
-        if (specifyDates == null || specifyDates.isEmpty()) {
-            // 没有指定多天，就按“每年同一天”来，一条就够
-            return Collections.singletonList(buildSingleItem(main));
-        }
-
-        LocalDateTime base = main.getRemindTime();
-        LocalDate baseDate = base.toLocalDate();
-        LocalTime baseTime = base.toLocalTime();
-        int year = baseDate.getYear();
-
-        List<TUserReminderItem> result = new ArrayList<>();
-
-        String[] dates = specifyDates.split(",");
-        for (String d : dates) {
-            String dateStr = d.trim();
-            if (dateStr.isEmpty()) continue;
-
-            LocalDate date;
-            try {
-                if (dateStr.length() == 5) { // 例如 "06-01"
-                    date = LocalDate.parse(year + "-" + dateStr);
-                } else { // "2025-06-01"
-                    date = LocalDate.parse(dateStr);
-                }
-            } catch (DateTimeParseException e) {
-                continue;
-            }
-
-            // 如果今年这个日期已经过去，就从明年开始
-            if (date.isBefore(baseDate)) {
-                date = date.plusYears(1);
-            }
-
-            TUserReminderItem item = baseItemFromMain(main);
-            item.setRemindTime(LocalDateTime.of(date, baseTime));
-            item.setRepeatRule(RepeatType.YEARLY);
-            item.setRepeatInterval(main.getRepeatInterval());
-            result.add(item);
-        }
-
-        if (result.isEmpty()) {
-            return Collections.singletonList(buildSingleItem(main));
-        }
-        return result;
-    }
-
-
     /**
      * 非多子项类型：只建一条子提醒
      */
@@ -744,15 +550,357 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
      * 修改用户提醒表主表， 只记录用户需要的提醒类型，方式
      */
     @Override
-    public boolean update(TUserReminder tUserReminder) {
-        return updateById(tUserReminder);
+    @Transactional(rollbackFor = Exception.class)
+    public boolean update(TUserReminder patch) {
+        if (patch.getId() == null) {
+            throw new ServiceException("id 不能为空");
+        }
+
+        TUserReminder db = this.getById(patch.getId());
+        if (db == null) {
+            throw new ServiceException("提醒不存在");
+        }
+
+        // 1. 判断这次请求是否只改状态（ON/OFF）
+        boolean onlyStatusChange = isOnlyStatusChange(patch);
+
+        // 2. 判断这次是否修改了“时间 & 重复相关字段”
+        boolean scheduleFieldChanged = isScheduleFieldChanged(patch);
+
+        // ① 只改状态：开关互相切换
+        if (onlyStatusChange && !scheduleFieldChanged) {
+            return updateStatusOnly(db, patch.getStatus());
+        }
+
+        // ② 没改时间&重复，只改标题/内容/通知方式等
+        if (!scheduleFieldChanged) {
+            // 只更新非空字段，避免把 null 覆盖掉
+            mergeNotNull(patch, db);
+            return this.updateById(db);
+        }
+
+        // ③ 改了时间/重复配置（包括“再提醒”和编辑规则）
+        // 先把非空字段合并到 db 上，得到“最新规则”
+        mergeNotNull(patch, db);
+
+        // 校验（跟 insert 一样）
+        if (!RepeatType.checkRepeatType(db.getRepeatRule())) {
+            throw new ServiceException("非法的重复类型:" + db.getRepeatRule());
+        }
+        if (RepeatType.CUSTOM.equals(db.getRepeatRule())
+                && (db.getCustomMode() == null || db.getCustomMode().isEmpty())) {
+            throw new ServiceException("自定义重复模式不能为空");
+        }
+        if (db.getRepeatInterval() == null || db.getRepeatInterval() <= 0) {
+            db.setRepeatInterval(1);
+        }
+
+        // 真正的“重新生成子项 + 重新调度”
+        return rebuildItemsAndSchedule(db);
     }
+
+    /**
+     * 只要这些字段中有任意一个非 null，就认为会影响“子项 & 调度”
+     */
+    private boolean isScheduleFieldChanged(TUserReminder patch) {
+        return patch.getRemindTime() != null
+                || patch.getRepeatRule() != null
+                || patch.getCustomMode() != null
+                || patch.getRepeatInterval() != null
+                || !isBlank(patch.getRepeatWeekdays())
+                || !isBlank(patch.getRepeatMonthDays())
+                || !isBlank(patch.getSpecifyTimes())
+                || !isBlank(patch.getSpecifyDates())
+                || patch.getAdvanceDays() != null;
+    }
+
+    /**
+     * 判断这次更新是否只改了 status 字段（id 除外）
+     * 前端如果只传 {id, status}，就会走这里
+     */
+    private boolean isOnlyStatusChange(TUserReminder patch) {
+        return patch.getStatus() != null
+                && patch.getRemindTime() == null
+                && patch.getRepeatRule() == null
+                && patch.getCustomMode() == null
+                && patch.getRepeatInterval() == null
+                && isBlank(patch.getRepeatWeekdays())
+                && isBlank(patch.getRepeatMonthDays())
+                && isBlank(patch.getSpecifyTimes())
+                && isBlank(patch.getSpecifyDates())
+                && patch.getAdvanceDays() == null;
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+
+    /**
+     * 只处理开关切换：
+     * - 1：开启 → 恢复未来的调度（从“现在”往后算下一次）
+     * - 0：关闭 → 取消所有未来调度
+     * - 2：一般不通过手工改成过期，不建议走这里
+     */
+    private boolean updateStatusOnly(TUserReminder db, Integer newStatus) {
+        log.info("updateStatusOnly id:{}, old:{}, newStatus:{}", db.getId(), db.getStatus(), newStatus);
+        if (newStatus == null || Objects.equals(db.getStatus(), newStatus)) {
+            return true;
+        }
+
+        db.setStatus(newStatus);
+        boolean ok = this.updateById(db);
+        if (!ok) {
+            return false;
+        }
+
+        Long mainId = db.getId();
+
+        // 关
+        if (Objects.equals(newStatus, RemindStatus.OFF)) {
+            // 关闭：取消所有未来调度（不动子项的 remindTime）
+            userRemindScheduler.cancelByMainId(mainId);
+            return true;
+        }
+
+        // 开
+        if (Objects.equals(newStatus, RemindStatus.ON)) {
+            List<TUserReminderItem> items = tUserReminderItemService.list(
+                    new LambdaQueryWrapper<TUserReminderItem>()
+                            .eq(TUserReminderItem::getMainId, mainId)
+                            .ne(TUserReminderItem::getStatus, RemindStatus.EXPIRED)
+            );
+
+            LocalDateTime now = LocalDateTime.now();
+            boolean hasFuture = false;
+
+            for (TUserReminderItem item : items) {
+                Long fireTime = null;
+
+                // 1) 如果子项的时间还在未来，直接用它
+                if (!item.getRemindTime().isBefore(now)) {
+                    fireTime = DateUtil.toTimestamp(item.getRemindTime());
+                } else {
+                    // 2) 子项时间已经在过去了，需要重新算下一次
+                    Long next = ScheduleUtil.getNextRemindTime(db, item);
+                    if (next == null) {
+                        // 这个子项确实已经无后续了，标记为过期
+                        item.setStatus(RemindStatus.EXPIRED);
+                        item.setUpdateTime(LocalDateTime.now());
+                        tUserReminderItemService.updateById(item);
+                        continue;
+                    }
+                    fireTime = next;
+                }
+
+                hasFuture = true;
+                userRemindScheduler.schedule(fireTime, db.getUserId(), item.getId());
+            }
+
+            // 如果一个未来任务都没挂上，相当于整条主提醒已经没意义了
+            if (!hasFuture) {
+                db.setStatus(RemindStatus.EXPIRED);
+                this.updateById(db);
+            }
+
+            return true;
+        }
+
+        // status == EXPIRED 就不做额外处理了
+        return true;
+    }
+
+
+
+    /**
+     * 按最新的 main 配置：
+     * 1. 删除旧子项 & 取消旧调度
+     * 2. 重建子项
+     * 3. 根据 status 决定是否调度
+     * 4. 如果算下来没有未来任务，则标记为 EXPIRED
+     */
+    private boolean rebuildItemsAndSchedule(TUserReminder main) {
+
+        Long mainId = main.getId();
+
+        // 1. 先更新主表“规则”本身
+        this.updateById(main);
+
+        // 2. 删除旧子项 & 取消旧任务
+        tUserReminderItemService.remove(
+                new LambdaQueryWrapper<TUserReminderItem>()
+                        .eq(TUserReminderItem::getMainId, mainId)
+        );
+         userRemindScheduler.cancelByMainId(mainId);
+
+        // 3. 按最新规则生成子项
+        List<TUserReminderItem> items = buildReminderItems(main);
+        if (items.isEmpty()) {
+            // 没有任何子项 = 本身就是“无效/过期”配置
+            main.setStatus(RemindStatus.EXPIRED);
+            this.updateById(main);
+            return true;
+        }
+
+        tUserReminderItemService.saveBatch(items);
+
+        // 如果当前状态是“关闭”，只保存子项，不调度
+        if (Objects.equals(main.getStatus(), RemindStatus.OFF)) {
+            return true;
+        }
+
+        // 4. 根据时间计算是否还有未来任务
+        boolean hasFuture = false;
+        LocalDateTime now = LocalDateTime.now();
+
+        for (TUserReminderItem item : items) {
+            long fireTime;
+
+            // ✅ 注意：这里最好用 item 的时间判断，而不是 main 的时间
+            if (item.getRemindTime().isBefore(now)) {
+                // 已经在过去了，算下一次
+                Long next = ScheduleUtil.getNextRemindTime(main, item);
+                if (next == null) {
+                    continue; // 这个子项彻底没有下次了
+                }
+                fireTime = next;
+            } else {
+                fireTime = DateUtil.toTimestamp(item.getRemindTime());
+            }
+
+            hasFuture = true;
+            userRemindScheduler.schedule(fireTime, main.getUserId(), item.getId());
+        }
+
+        if (!hasFuture) {
+            main.setStatus(RemindStatus.EXPIRED);
+        } else {
+            // 如果之前是 EXPIRED 或 null，就默认变成 ON
+            if (main.getStatus() == null || Objects.equals(main.getStatus(), RemindStatus.EXPIRED)) {
+                main.setStatus(RemindStatus.ON);
+            }
+        }
+        this.updateById(main);
+
+        return true;
+    }
+
+
+    private void mergeNotNull(TUserReminder src, TUserReminder target) {
+        if (src == null || target == null) {
+            return;
+        }
+
+        if (src.getTitle() != null) {
+            target.setTitle(src.getTitle());
+        }
+        if (src.getContent() != null) {
+            target.setContent(src.getContent());
+        }
+        if (src.getRemindTime() != null) {
+            target.setRemindTime(src.getRemindTime());
+        }
+        if (src.getRepeatRule() != null) {
+            target.setRepeatRule(src.getRepeatRule());
+        }
+        if (src.getCustomMode() != null) {
+            target.setCustomMode(src.getCustomMode());
+        }
+        if (src.getAdvanceDays() != null) {
+            target.setAdvanceDays(src.getAdvanceDays());
+        }
+        if (src.getRepeatInterval() != null) {
+            target.setRepeatInterval(src.getRepeatInterval());
+        }
+        if (src.getRepeatWeekdays() != null) {
+            target.setRepeatWeekdays(src.getRepeatWeekdays());
+        }
+        if (src.getRepeatMonthDays() != null) {
+            target.setRepeatMonthDays(src.getRepeatMonthDays());
+        }
+        if (src.getSpecifyDates() != null) {
+            target.setSpecifyDates(src.getSpecifyDates());
+        }
+        if (src.getSpecifyTimes() != null) {
+            target.setSpecifyTimes(src.getSpecifyTimes());
+        }
+        if (src.getStatus() != null) {
+            target.setStatus(src.getStatus());
+        }
+        if (src.getDoCircle() != null) {
+            target.setDoCircle(src.getDoCircle());
+        }
+        if (src.getCircleBegin() != null) {
+            target.setCircleBegin(src.getCircleBegin());
+        }
+        if (src.getCircleEnd() != null) {
+            target.setCircleEnd(src.getCircleEnd());
+        }
+        if (src.getCircleInterval() != null) {
+            target.setCircleInterval(src.getCircleInterval());
+        }
+        if (src.getNotifyDesktop() != null) {
+            target.setNotifyDesktop(src.getNotifyDesktop());
+        }
+        if (src.getNotifyWx() != null) {
+            target.setNotifyWx(src.getNotifyWx());
+        }
+        if (src.getNotifySound() != null) {
+            target.setNotifySound(src.getNotifySound());
+        }
+        if (src.getNotifySystem() != null) {
+            target.setNotifySystem(src.getNotifySystem());
+        }
+        if (src.getNotifySoundFile() != null) {
+            target.setNotifySoundFile(src.getNotifySoundFile());
+        }
+
+        if (src.getWebhook() != null) {
+            target.setWebhook(src.getWebhook());
+        }
+        if (src.getWebhookMethod() != null) {
+            target.setWebhookMethod(src.getWebhookMethod());
+        }
+        if (src.getNotifyDesktopPosition() != null) {
+            target.setNotifyDesktopPosition(src.getNotifyDesktopPosition());
+        }
+        if (src.getNotifyWecomBot() != null) {
+            target.setNotifyWecomBot(src.getNotifyWecomBot());
+        }
+        if (src.getNotifyDingdingBot() != null) {
+            target.setNotifyDingdingBot(src.getNotifyDingdingBot());
+        }
+        if (src.getWecomBotEnable() != null) {
+            target.setWecomBotEnable(src.getWecomBotEnable());
+        }
+        if (src.getDingdingBotEnable() != null) {
+            target.setDingdingBotEnable(src.getDingdingBotEnable());
+        }
+        if (src.getWebhookEnable() != null) {
+            target.setWebhookEnable(src.getWebhookEnable());
+        }
+    }
+
+
 
     /**
      * 批量删除用户提醒表主表， 只记录用户需要的提醒类型，方式
      */
     @Override
+    @Transactional
     public boolean deleteByIds(List<Long> ids) {
-        return removeByIds(ids);
+        boolean main = removeByIds(ids);
+
+        LambdaQueryWrapper<TUserReminderItem> queryByMain = new LambdaQueryWrapper<TUserReminderItem>()
+                .in(TUserReminderItem::getMainId, ids);
+        List<TUserReminderItem> subItems = tUserReminderItemService
+                .list(queryByMain);
+
+        for (TUserReminderItem subItem : subItems) {
+            userRemindScheduler.cancelSchedule(String.valueOf(subItem.getUserId()), String.valueOf(subItem.getId()));
+        }
+
+        boolean item = tUserReminderItemService.remove(queryByMain);
+        return main &  item;
     }
 }

@@ -100,3 +100,25 @@ CREATE TABLE t_user_reminder_field (
    field_value VARCHAR(255) COMMENT '字段值',
    FOREIGN KEY (user_reminder_id) REFERENCES t_user_reminder(id)
 ) COMMENT='用户提醒的扩展字段值表';
+
+
+
+CREATE TABLE `t_user_notify_setting` (
+ `id` bigint NOT NULL AUTO_INCREMENT,
+ `user_id` bigint NOT NULL COMMENT '用户ID（跟提醒表里的 user_id 对应）',
+
+ `wecom_bot_url` varchar(512) DEFAULT NULL COMMENT '企业微信机器人 Webhook',
+ `dingding_bot_url` varchar(512) DEFAULT NULL COMMENT '钉钉机器人 Webhook',
+ `bark_url` varchar(512) DEFAULT NULL COMMENT 'Bark 推送 URL',
+ `bark_enabled_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Bark 默认开启：1 开启，0 关闭',
+ `wecom_enabled_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT '企业微信机器人默认开启：1 开启，0 关闭',
+ `dingding_enabled_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT '钉钉机器人默认开启：1 开启，0 关闭',
+ `webhook_enabled_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT '通用 Webhook 默认开启：1 开启，0 关闭',
+
+ `dingding_secret` varchar(255) DEFAULT NULL COMMENT '钉钉机器人加签 Secret',
+
+ `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `uk_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户通知渠道配置表';

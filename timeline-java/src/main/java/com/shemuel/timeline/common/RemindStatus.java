@@ -6,7 +6,7 @@ package com.shemuel.timeline.common;
  * @Description:
  */
 public class RemindStatus {
-    public static final int TO_REMIND = 0;
-    public static final int EXPIRED = 1;
-    public static final int FINISHED = 2;
+    public static final int OFF = 0;
+    public static final int ON = 1;
+    public static final int EXPIRED = 2;
 }

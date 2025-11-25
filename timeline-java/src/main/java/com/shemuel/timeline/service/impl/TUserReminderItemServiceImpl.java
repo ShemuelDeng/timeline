@@ -81,4 +81,11 @@ public class TUserReminderItemServiceImpl extends ServiceImpl<TUserReminderItemM
     public boolean deleteByIds(List<Long> ids) {
         return removeByIds(ids);
     }
+
+    @Override
+    public boolean deleteByMainId(Long mainId) {
+        LambdaQueryWrapper<TUserReminderItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TUserReminderItem::getMainId, mainId);
+        return remove(wrapper);
+    }
 }
