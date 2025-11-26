@@ -909,20 +909,59 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
      * 批量删除用户提醒表主表， 只记录用户需要的提醒类型，方式
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteByIds(List<Long> ids) {
-        boolean main = removeByIds(ids);
-
-        LambdaQueryWrapper<TUserReminderItem> queryByMain = new LambdaQueryWrapper<TUserReminderItem>()
-                .in(TUserReminderItem::getMainId, ids);
-        List<TUserReminderItem> subItems = tUserReminderItemService
-                .list(queryByMain);
-
-        for (TUserReminderItem subItem : subItems) {
-            userRemindScheduler.cancelSchedule(String.valueOf(subItem.getUserId()), String.valueOf(subItem.getId()));
+        if (ids == null || ids.isEmpty()) {
+            return false;
         }
 
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+
+        // 1. 只查当前用户名下、且 id 在传入列表里的主记录
+        List<TUserReminder> myReminders = this.list(
+                new LambdaQueryWrapper<TUserReminder>()
+                        .in(TUserReminder::getId, ids)
+                        .eq(TUserReminder::getUserId, currentUserId)
+        );
+
+        if (myReminders.isEmpty()) {
+            // 一个都不属于当前用户，直接认为越权
+            throw new ServiceException("只允许删除当前用户自己的提醒记录");
+        }
+
+        // 可删除的主记录 id 列表
+        List<Long> allowedIds = myReminders.stream()
+                .map(TUserReminder::getId)
+                .collect(Collectors.toList());
+
+        // 如果你希望“只要有一个不是自己的就报错”，可以加这一段：
+        if (allowedIds.size() != ids.size()) {
+            // 说明传入的 ids 里有别人的数据或不存在的记录
+            throw new ServiceException("存在非当前用户的提醒记录，删除被拒绝");
+        }
+
+        // 2. 删除主表（仅当前用户自己的）
+        boolean main = removeByIds(allowedIds);
+
+        // 3. 处理子表：只查这些 mainId 且 userId 为当前用户
+        LambdaQueryWrapper<TUserReminderItem> queryByMain = new LambdaQueryWrapper<TUserReminderItem>()
+                .in(TUserReminderItem::getMainId, allowedIds)
+                .eq(TUserReminderItem::getUserId, currentUserId);
+
+        List<TUserReminderItem> subItems = tUserReminderItemService.list(queryByMain);
+
+        // 先取消调度
+        for (TUserReminderItem subItem : subItems) {
+            userRemindScheduler.cancelSchedule(
+                    String.valueOf(subItem.getUserId()),
+                    String.valueOf(subItem.getId())
+            );
+        }
+
+        // 再删子表
         boolean item = tUserReminderItemService.remove(queryByMain);
-        return main &  item;
+
+        return main && item;
     }
+
 }

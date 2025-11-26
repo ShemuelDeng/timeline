@@ -60,7 +60,7 @@ public class TUserReminder implements Serializable {
     private String specifyTimes;
 
     @Schema(description = "提醒状态，0：已关闭，1：已开启，2：已过期")
-    private Integer status = 1;
+    private Integer status;
 
     @Schema(description = "是否循环：1：开启， 0：关闭")
     private Integer doCircle;

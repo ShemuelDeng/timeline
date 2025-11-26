@@ -275,7 +275,6 @@ public class TUserReminderController {
     @Operation(summary = "修改用户提醒表主表， 只记录用户需要的提醒类型，方式")
     public RestResult<Object> edit(@RequestBody TUserReminder tUserReminder) {
         tUserReminder.setUserId(StpUtil.getLoginIdAsLong());
-        checkParams(tUserReminder);
         return RestResult.success(tUserReminderService.update(tUserReminder));
     }
 

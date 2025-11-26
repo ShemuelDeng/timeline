@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -147,7 +148,8 @@ public abstract class ZSetDelayScheduler implements Runnable, InitializingBean, 
      * @param taskPayloads
      */
     public void cancelSchedule(String... taskPayloads) {
-        redisTemplate.opsForZSet().remove(zSetKey, getZSetValue(taskPayloads));
+        Long remove = redisTemplate.opsForZSet().remove(zSetKey, getZSetValue(taskPayloads));
+        log.info("cancelSchedule {}, {}", getZSetValue(taskPayloads));
     }
 
     private String getZSetValue(String... taskPayloads) {
