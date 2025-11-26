@@ -1,5 +1,6 @@
 package com.shemuel.timeline.tools;
 
+import com.shemuel.timeline.notify.NotifyTestResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,10 +25,10 @@ public class BarkPushTool {
      * @param title   标题
      * @param body    内容
      */
-    public void push(String baseUrl, String title, String body) {
+    public String push(String baseUrl, String title, String body) {
         if (!StringUtils.hasText(baseUrl)) {
             log.warn("BarkPushTool.push skip, baseUrl is blank");
-            return;
+            return "baseUrl is blank";
         }
         try {
             String cleanBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
@@ -38,9 +39,10 @@ public class BarkPushTool {
 
             String resp = restTemplate.getForObject(url, String.class);
             log.debug("BarkPushTool push success, url={}, resp={}", url, resp);
+            return resp;
         } catch (Exception e) {
             log.error("BarkPushTool push error, baseUrl={}, err={}", baseUrl, e.getMessage(), e);
-
+            return "ERROR: " + e.getMessage();
         }
     }
 

@@ -8,13 +8,16 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson.JSON;
 import com.shemuel.timeline.common.CustomMode;
 import com.shemuel.timeline.common.RemindStatus;
 import com.shemuel.timeline.common.RepeatType;
+import com.shemuel.timeline.entity.TUserNotifySetting;
 import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.exception.ServiceException;
 import com.shemuel.timeline.schedule.UserRemindScheduler;
+import com.shemuel.timeline.service.TUserNotifySettingService;
 import com.shemuel.timeline.service.TUserReminderItemService;
 import com.shemuel.timeline.utils.DateUtil;
 import com.shemuel.timeline.utils.ScheduleUtil;
@@ -43,6 +46,9 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
     @Resource
     private TUserReminderItemService tUserReminderItemService;
+
+    @Resource
+    private TUserNotifySettingService tUserNotifySettingService;
 
     /**
      * 查询用户提醒表主表， 只记录用户需要的提醒类型，方式分页列表
@@ -127,6 +133,20 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
     @Autowired
     private UserRemindScheduler userRemindScheduler;
 
+    private void mergeSettingNotNull(TUserNotifySetting src, TUserReminder target) {
+        if (src == null) return;
+        if (src.getWecomEnabledDefault() != null && target.getWecomBotEnable() == null) {
+            target.setWecomBotEnable(src.getWecomEnabledDefault());
+        }
+        if (src.getDingdingEnabledDefault() != null && target.getDingdingBotEnable() == null) {
+            target.setDingdingBotEnable(src.getDingdingEnabledDefault());
+        }
+
+        if (src.getBarkEnabledDefault() != null && target.getWebhookEnable() == null) {
+            target.setWebhookEnable(src.getBarkEnabledDefault());
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean insert(TUserReminder tUserReminder) {
@@ -147,6 +167,8 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
             tUserReminder.setRepeatInterval(1);
         }
 
+        TUserNotifySetting byUserId = tUserNotifySettingService.getByUserId(StpUtil.getLoginIdAsLong());
+        mergeSettingNotNull(byUserId, tUserReminder);
         log.info("保存提醒记录：", JSON.toJSONString(tUserReminder));
         // 2. 先保存主表（保存后 id 会回填）
         this.save(tUserReminder);

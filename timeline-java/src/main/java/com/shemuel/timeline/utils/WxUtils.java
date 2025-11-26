@@ -30,6 +30,7 @@ public class WxUtils {
         if(!wxBaseResp.hasSuccess()){
             log.warn("sendWebhookMsgError|{}|{}|{}", url, JSONObject.toJSONString(webhookSendMsgReq), wxBaseResp.getErrmsg());
         }
+        log.info("sendWebhookMsg|{}|{}|{}", url, JSONObject.toJSONString(webhookSendMsgReq), wxBaseResp.getErrcode());
         return wxBaseResp;
     }
 }

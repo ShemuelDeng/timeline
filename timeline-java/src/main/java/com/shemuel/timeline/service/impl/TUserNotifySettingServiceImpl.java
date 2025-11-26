@@ -1,6 +1,8 @@
 package com.shemuel.timeline.service.impl;
 
 import java.util.List;
+
+import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.stereotype.Service;
 import com.shemuel.timeline.mapper.TUserNotifySettingMapper;
 import com.shemuel.timeline.entity.TUserNotifySetting;
@@ -84,5 +86,11 @@ public class TUserNotifySettingServiceImpl extends ServiceImpl<TUserNotifySettin
     @Override
     public boolean deleteByIds(List<Long> ids) {
         return removeByIds(ids);
+    }
+
+    @Override
+    public TUserNotifySetting getByUserId(Long userId) {
+       return getOne(new LambdaQueryWrapper<TUserNotifySetting>()
+                .eq(TUserNotifySetting::getUserId, userId));
     }
 }

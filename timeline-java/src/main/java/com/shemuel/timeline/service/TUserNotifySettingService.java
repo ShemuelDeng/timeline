@@ -33,4 +33,6 @@ public interface TUserNotifySettingService extends IService<TUserNotifySetting> 
      * 批量删除用户通知渠道配置表
      */
     boolean deleteByIds(List<Long> ids);
+
+    TUserNotifySetting getByUserId(Long userId);
 }
