@@ -252,8 +252,17 @@ public class TUserReminderController {
     public RestResult<Object> add(@RequestBody TUserReminder tUserReminder) {
 
         tUserReminder.setUserId(StpUtil.getLoginIdAsLong());
+        checkParams(tUserReminder);
         return RestResult.success(tUserReminderService.insert(tUserReminder));
     }
+
+    @GetMapping("/getNextRemindTime/{id}")
+    @Operation(summary = "添加用户提醒表主表， 只记录用户需要的提醒类型，方式")
+    public RestResult<LocalDateTime> getNextRemindTime(@PathVariable("id") Long id) {
+
+        return RestResult.success(tUserReminderService.getNextRemindTime(id));
+    }
+
 
     @PostMapping("/remindAgain")
     @Operation(summary = "添加用户提醒表主表， 只记录用户需要的提醒类型，方式")
@@ -331,7 +340,7 @@ public class TUserReminderController {
             String[] split = specifyTimes.split(",");
 
             if (split.length == 1 && before){
-                throw new ServiceException("当前首次提醒时间无效");
+                throw new ServiceException("当前提醒时间已过期");
             }
         }
 

@@ -8,7 +8,6 @@ import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.mapper.TUserReminderMapper;
 import com.shemuel.timeline.service.TUserReminderItemService;
-import com.shemuel.timeline.tools.wx.WeComRobotTool;
 import com.shemuel.timeline.utils.DateUtil;
 import com.shemuel.timeline.utils.ScheduleUtil;
 import lombok.extern.slf4j.Slf4j;

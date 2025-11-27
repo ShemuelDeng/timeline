@@ -3,6 +3,8 @@ package com.shemuel.timeline.service;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -22,7 +24,9 @@ public interface TUserReminderService extends IService<TUserReminder> {
     /**
      * 新增用户提醒表主表， 只记录用户需要的提醒类型，方式
      */
-    boolean insert(TUserReminder tUserReminder);
+    TUserReminder insert(TUserReminder tUserReminder);
+
+    LocalDateTime getNextRemindTime(Long id);
 
 
     /**

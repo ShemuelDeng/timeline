@@ -35,6 +35,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 /**
  * 用户提醒表主表， 只记录用户需要的提醒类型，方式 服务实现类
@@ -86,6 +87,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         wrapper.eq(tUserReminder.getUpdateTime() != null, TUserReminder::getUpdateTime, tUserReminder.getUpdateTime());
         wrapper.eq(tUserReminder.getWebhook() != null, TUserReminder::getWebhook, tUserReminder.getWebhook());
         wrapper.eq(tUserReminder.getWebhookMethod() != null, TUserReminder::getWebhookMethod, tUserReminder.getWebhookMethod());
+        wrapper.orderByDesc(TUserReminder::getId);
         return page(PageUtil.getPage(), wrapper);
     }
 
@@ -149,7 +151,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean insert(TUserReminder tUserReminder) {
+    public TUserReminder insert(TUserReminder tUserReminder) {
 
         // 1. 基础校验
         if (!RepeatType.checkRepeatType(tUserReminder.getRepeatRule())) {
@@ -211,7 +213,37 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
             }
         }
 
-        return true;
+        return tUserReminder;
+    }
+
+    @Override
+    public LocalDateTime getNextRemindTime(Long id) {
+
+        TUserReminder main = getById(id);
+        if (main == null) {
+            return null;
+        }
+        List<TUserReminderItem> items = tUserReminderItemService.getByMainId(main.getId());
+
+        LocalDateTime now = LocalDateTime.now();
+
+        List<Long> fireTimes = new ArrayList<>();
+        for (TUserReminderItem item : items) {
+
+            // ✅ 注意：这里最好用 item 的时间判断，而不是 main 的时间
+            if (item.getRemindTime().isBefore(now)) {
+                // 已经在过去了，算下一次
+                Long next = ScheduleUtil.getNextRemindTime(main, item);
+                if (next == null) {
+                    continue; // 这个子项彻底没有下次了
+                }
+                fireTimes.add(next);
+            } else {
+                fireTimes.add(DateUtil.toTimestamp(item.getRemindTime()));
+            }
+        }
+
+        return CollectionUtils.isEmpty(fireTimes) ? null : DateUtil.fromTimestamp(fireTimes.get(0));
     }
 
     /**

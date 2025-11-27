@@ -32,13 +32,10 @@ public class BarkPushTool {
         }
         try {
             String cleanBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-            String encodedTitle = urlEncode(title);
-            String encodedBody = urlEncode(body);
-
-            String url = cleanBase + "/" + encodedTitle + "/" + encodedBody;
+            String url = cleanBase + "/" + title + "/" + body;
 
             String resp = restTemplate.getForObject(url, String.class);
-            log.debug("BarkPushTool push success, url={}, resp={}", url, resp);
+            log.info("BarkPushTool push success, url={}, resp={}", url, resp);
             return resp;
         } catch (Exception e) {
             log.error("BarkPushTool push error, baseUrl={}, err={}", baseUrl, e.getMessage(), e);

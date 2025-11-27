@@ -88,4 +88,12 @@ public class TUserReminderItemServiceImpl extends ServiceImpl<TUserReminderItemM
         wrapper.eq(TUserReminderItem::getMainId, mainId);
         return remove(wrapper);
     }
+
+
+    @Override
+    public List<TUserReminderItem> getByMainId(Long mainId) {
+        LambdaQueryWrapper<TUserReminderItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TUserReminderItem::getMainId, mainId);
+        return list( wrapper);
+    }
 }

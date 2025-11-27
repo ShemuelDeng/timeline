@@ -35,4 +35,6 @@ public interface TUserReminderItemService extends IService<TUserReminderItem> {
     boolean deleteByIds(List<Long> ids);
 
     boolean deleteByMainId(Long mainId);
+
+    List<TUserReminderItem> getByMainId(Long mainId);
 }

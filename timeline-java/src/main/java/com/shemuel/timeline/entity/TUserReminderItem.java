@@ -35,6 +35,7 @@ public class TUserReminderItem implements Serializable {
     private String content;
 
     @Schema(description = "提醒时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime remindTime;
 
     @Schema(description = "间隔数，如每2天/每2周")

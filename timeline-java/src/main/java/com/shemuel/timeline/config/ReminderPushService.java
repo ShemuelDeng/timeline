@@ -1,5 +1,6 @@
 package com.shemuel.timeline.config;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shemuel.timeline.common.Constants;
@@ -11,6 +12,7 @@ import com.shemuel.timeline.service.TUserNotifySettingService;
 import com.shemuel.timeline.tools.BarkPushTool;
 import com.shemuel.timeline.tools.DingTalkRobotTool;
 import com.shemuel.timeline.tools.wx.WeComRobotTool;
+import com.shemuel.timeline.utils.DateUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +45,7 @@ public class ReminderPushService {
         private String title;
         private String content;
         private String position;
+        private String soundFile = "";
         private Integer systemNotify;
         @JSONField(format = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime remindTime;
@@ -84,6 +87,11 @@ public class ReminderPushService {
         msg.setSystemNotify(tUserReminder.getNotifySystem());
         msg.setPosition(WindowPosition.positionMap.get(tUserReminder.getNotifyDesktopPosition()));
 
+        if (tUserReminder.getNotifySound() == Constants.active){
+            msg.setSoundFile(tUserReminder.getNotifySoundFile());
+        }
+
+
         try {
             ReminderWebSocketEndpoint.sendToUser(userId, msg);
         } catch (Exception e) {
@@ -102,7 +110,7 @@ public class ReminderPushService {
         if (StringUtils.isNotEmpty(remind.getContent())) {
             sb.append(remind.getContent()).append("\n");
         }
-        sb.append(remind.getRemindTime());
+        sb.append( DateUtil.formatLocalDateTime(remind.getRemindTime(), "yyyy-MM-dd HH:mm"));
         return sb.toString();
     }
 
