@@ -1,15 +1,14 @@
 package com.shemuel.timeline.utils;
 
 import com.shemuel.timeline.common.CustomMode;
-import com.shemuel.timeline.common.RepeatType;
+import com.shemuel.timeline.common.RepeatRuleConst;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.entity.TUserReminderItem;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.scheduling.support.CronExpression;
 
 import java.time.*;
-import java.util.List;
-import java.util.Objects;
-
 
 
 /**
@@ -27,11 +26,17 @@ public class ScheduleUtil {
      *
      * @param main 主提醒记录（包含 repeatRule / customMode / doCircle 等）
      * @param sub  子提醒项（包含当前 remindTime / repeatRule / repeatInterval）
+     * @param isForSchedule  获取下次执行时间的业务场景， 如果是更新db，false, 如果是定时任务，true
      * @return 下次提醒时间的毫秒级时间戳（13 位）；如果没有下一次则返回 null
      */
-    public static Long getNextRemindTime(TUserReminder main, TUserReminderItem sub) {
+    public static Long getNextRemindTime(TUserReminder main, TUserReminderItem sub, boolean isForSchedule) {
         if (main == null || sub == null) {
             return null;
+        }
+
+        // 优先使用cron
+        if (StringUtils.isNotEmpty(main.getCronExpr())){
+            return getNextByCron(main, sub, isForSchedule);
         }
 
         LocalDateTime next = calcNextTimeForItem(main, sub);
@@ -39,6 +44,43 @@ public class ScheduleUtil {
             return null;
         }
         return DateUtil.toTimestamp(next);
+    }
+
+    private static Long getNextByCron(TUserReminder remind, TUserReminderItem item, boolean isForSchedule) {
+        String cronExpr = remind.getCronExpr();
+        if (cronExpr == null || cronExpr.trim().isEmpty()) {
+            return null; // 没有配置 cron，就当算不出下一次
+        }
+
+        CronExpression cron;
+        try {
+            cron = CronExpression.parse(cronExpr);
+        } catch (Exception e) {
+            // 表达式非法，按无下一次处理
+            log.error("Cron表达式非法：{}", cronExpr);
+            return null;
+        }
+
+        LocalDateTime base = LocalDateTime.now();
+        LocalDateTime cronStart = remind.getCronStartTime();
+
+        if (!isForSchedule && cronStart != null && base.isBefore(cronStart)) {
+            base = cronStart;
+        }
+
+        LocalDateTime next = cron.next(base);
+
+        log.info("cron next  base {}, next :{}", DateUtil.formatLocalDateTime(base, "yyyy-MM-dd HH:mm:ss"), DateUtil.formatLocalDateTime(next, "yyyy-MM-dd HH:mm:ss"));
+        if (next == null) {
+            return null; // 没有下一次了
+        }
+
+        // 可选：如果你支持结束时间，可以在这里判断一下
+        if (remind.getCronEndTime() != null && next.isAfter(remind.getCronEndTime())) {
+            return null;
+        }
+
+        return next.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
 
@@ -78,10 +120,10 @@ public class ScheduleUtil {
         }
 
         // 2. 处理自定义模式（生日 / 纪念日 -> YEARLY）
-        if (RepeatType.CUSTOM.equals(repeatType)) {
+        if (RepeatRuleConst.CUSTOM.equals(repeatType)) {
             String customMode = main.getCustomMode();
             if (CustomMode.BIRTHDAY.equals(customMode) || CustomMode.ANNIVERSARY.equals(customMode)) {
-                repeatType = RepeatType.YEARLY;
+                repeatType = RepeatRuleConst.YEARLY;
             } else {
                 // 其他自定义先当单次
                 return null;
@@ -109,28 +151,28 @@ public class ScheduleUtil {
 
         // 5. 普通重复（不带循环）
         switch (repeatType) {
-            case RepeatType.NONE:
+            case RepeatRuleConst.NONE:
                 // 单次提醒：主/子都不再重复
                 return null;
 
-            case RepeatType.DAILY:
+            case RepeatRuleConst.DAILY:
                 return t.plusDays(interval);
 
-            case RepeatType.WEEKLY:
+            case RepeatRuleConst.WEEKLY:
                 return t.plusWeeks(interval);
 
-            case RepeatType.WORKDAY:
+            case RepeatRuleConst.WORKDAY:
                 // 简单版本：每个工作日（不看 interval），如果你未来需要“每隔 N 个工作日”，可以再扩展
                 return nextWorkday(t);
 
-            case RepeatType.WEEKEND:
+            case RepeatRuleConst.WEEKEND:
                 // 周末子项建议分别两条：周六一条 / 周日一条
                 return t.plusWeeks(interval);
 
-            case RepeatType.MONTHLY:
+            case RepeatRuleConst.MONTHLY:
                 return t.plusMonths(interval);
 
-            case RepeatType.YEARLY:
+            case RepeatRuleConst.YEARLY:
                 return t.plusYears(interval);
 
             default:
@@ -179,29 +221,29 @@ public class ScheduleUtil {
         LocalDateTime nextBase;
 
         switch (repeatType) {
-            case RepeatType.NONE:
+            case RepeatRuleConst.NONE:
                 // 单次 + 循环：今天的循环结束就没了
                 return null;
 
-            case RepeatType.DAILY:
+            case RepeatRuleConst.DAILY:
                 nextBase = baseThisCycle.plusDays(interval);
                 break;
 
-            case RepeatType.WEEKLY:
-            case RepeatType.WEEKEND:
+            case RepeatRuleConst.WEEKLY:
+            case RepeatRuleConst.WEEKEND:
                 nextBase = baseThisCycle.plusWeeks(interval);
                 break;
 
-            case RepeatType.WORKDAY:
+            case RepeatRuleConst.WORKDAY:
                 // 工作日 + 循环：今天循环结束后，跳到下一个工作日的 circleBegin
                 nextBase = nextWorkday(baseThisCycle);
                 break;
 
-            case RepeatType.MONTHLY:
+            case RepeatRuleConst.MONTHLY:
                 nextBase = baseThisCycle.plusMonths(interval);
                 break;
 
-            case RepeatType.YEARLY:
+            case RepeatRuleConst.YEARLY:
                 nextBase = baseThisCycle.plusYears(interval);
                 break;
 

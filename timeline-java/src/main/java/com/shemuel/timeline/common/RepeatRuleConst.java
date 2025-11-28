@@ -2,9 +2,9 @@ package com.shemuel.timeline.common;
 
 import java.util.Set;
 
-public final class RepeatType {
+public final class RepeatRuleConst {
 
-    private RepeatType() {}
+    private RepeatRuleConst() {}
 
     public static final String NONE = "NONE";
     public static final String DAILY = "DAILY";
@@ -13,6 +13,8 @@ public final class RepeatType {
     public static final String WEEKEND = "WEEKEND";
     public static final String MONTHLY = "MONTHLY";
     public static final String YEARLY = "YEARLY";
+
+    public static final String CRON = "CRON";
 
 
     /**
@@ -31,13 +33,14 @@ public final class RepeatType {
 
 
     public static boolean checkRepeatType(String repeatType) {
-        return RepeatType.NONE.equals(repeatType)
-                || RepeatType.DAILY.equals(repeatType)
-                || RepeatType.WEEKLY.equals(repeatType)
-                || RepeatType.WORKDAY.equals(repeatType)
-                || RepeatType.WEEKEND.equals(repeatType)
-                || RepeatType.MONTHLY.equals(repeatType)
-                || RepeatType.YEARLY.equals(repeatType)
-                || RepeatType.CUSTOM.equals(repeatType);
+        return RepeatRuleConst.NONE.equals(repeatType)
+                || RepeatRuleConst.DAILY.equals(repeatType)
+                || RepeatRuleConst.WEEKLY.equals(repeatType)
+                || RepeatRuleConst.WORKDAY.equals(repeatType)
+                || RepeatRuleConst.WEEKEND.equals(repeatType)
+                || RepeatRuleConst.CRON.equals(repeatType)
+                || RepeatRuleConst.MONTHLY.equals(repeatType)
+                || RepeatRuleConst.YEARLY.equals(repeatType)
+                || RepeatRuleConst.CUSTOM.equals(repeatType);
     }
 }

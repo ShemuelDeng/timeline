@@ -5,29 +5,24 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson.JSON;
 import com.shemuel.timeline.common.*;
-import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.exception.ServiceException;
-import com.shemuel.timeline.tools.weather.WeatherTool;
-import com.shemuel.timeline.tools.wx.WeComRobotTool;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.web.bind.annotation.*;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.service.TUserReminderService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import lombok.RequiredArgsConstructor;
 
 /**
  * 用户提醒表主表， 只记录用户需要的提醒类型，方式 控制器
@@ -270,7 +265,7 @@ public class TUserReminderController {
         TUserReminder oldReminder = tUserReminderService.getById(tUserReminder.getId());
 
         oldReminder.setId(null);
-        oldReminder.setRepeatRule(RepeatType.NONE);
+        oldReminder.setRepeatRule(RepeatRuleConst.NONE);
         oldReminder.setDoCircle(Constants.NO_active);
         oldReminder.setStatus(RemindStatus.ON);
         oldReminder.setRemindTime(LocalDateTime.now().plusMinutes(10));
@@ -294,28 +289,28 @@ public class TUserReminderController {
     }
 
     private void checkParams(TUserReminder tUserReminder) {
-        if (!RepeatType.checkRepeatType(tUserReminder.getRepeatRule())){
+        if (!RepeatRuleConst.checkRepeatType(tUserReminder.getRepeatRule())){
             throw new ServiceException("请选择重复规则");
         }
-        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatType.CUSTOM)){
+        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.CUSTOM)){
             if (Objects.isNull(tUserReminder.getCustomMode())){
                 throw new ServiceException("请选择自定义模式");
             }
         }
 
-        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatType.WEEKLY)){
+        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.WEEKLY)){
             if (Objects.isNull(tUserReminder.getRepeatWeekdays())){
                 throw new ServiceException("请选择周几");
             }
         }
 
-        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatType.MONTHLY)){
+        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.MONTHLY)){
             if (Objects.isNull(tUserReminder.getRepeatMonthDays())){
                 throw new ServiceException("请选择每月的哪几天");
             }
         }
 
-        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatType.YEARLY)){
+        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.YEARLY)){
             if (Objects.isNull(tUserReminder.getSpecifyDates())){
                 throw new ServiceException("请选择每年哪些天");
             }
@@ -328,7 +323,7 @@ public class TUserReminderController {
         }
 
 
-        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatType.NONE)
+        if (Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.NONE)
                 && Objects.equals(tUserReminder.getDoCircle(), Constants.NO_active)){
 
             String specifyTimes = tUserReminder.getSpecifyTimes();

@@ -35,7 +35,7 @@ public class TUserReminder implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime remindTime;
 
-    @Schema(description = "重复规则：NONE, DAILY, WEEKLY, MONTHLY, YEARLY,WORKDAY, CUSTOM")
+    @Schema(description = "重复规则：NONE, DAILY, WEEKLY, MONTHLY, YEARLY,WORKDAY, CRON, CUSTOM")
     private String repeatRule;
 
     @Schema(description = "当重复规则是自定义时，WEEKLY, YEARLY, MEDICINE,ANNIVERSARY 自定义模式： 按月，按年， 用药提醒，纪念日")
@@ -125,4 +125,23 @@ public class TUserReminder implements Serializable {
 
     @Schema(description = "是否可见, 用于10分钟后再提醒，临时创建一个一次性的，， 前端不可见的任务，到期后会自动删除")
     private Integer visible;
+
+    /**
+     * cron 表达式，和现有 repeatRule 共存：
+     * - 可以把它当成一种新的 RepeatType.CRON
+     * - 或者约定：有 cronExpr 时优先用 cron
+     */
+    @Schema(description = "cron表达式")
+    private String cronExpr;
+
+
+    /** Cron 生效开始时间 */
+    @Schema(description = "cron_start_time")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime cronStartTime;
+
+    /** Cron 生效结束时间 */
+    @Schema(description = "cron_end_time")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime cronEndTime;
 }

@@ -10,21 +10,25 @@ import java.util.stream.Collectors;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson.JSON;
+import com.shemuel.timeline.common.Constants;
 import com.shemuel.timeline.common.CustomMode;
 import com.shemuel.timeline.common.RemindStatus;
-import com.shemuel.timeline.common.RepeatType;
+import com.shemuel.timeline.common.RepeatRuleConst;
 import com.shemuel.timeline.entity.TUserNotifySetting;
 import com.shemuel.timeline.entity.TUserReminderItem;
 import com.shemuel.timeline.exception.ServiceException;
 import com.shemuel.timeline.schedule.UserRemindScheduler;
 import com.shemuel.timeline.service.TUserNotifySettingService;
 import com.shemuel.timeline.service.TUserReminderItemService;
+import com.shemuel.timeline.utils.CronUtil;
 import com.shemuel.timeline.utils.DateUtil;
 import com.shemuel.timeline.utils.ScheduleUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import com.shemuel.timeline.mapper.TUserReminderMapper;
 import com.shemuel.timeline.entity.TUserReminder;
@@ -149,20 +153,34 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         }
     }
 
+
+    private void checkCron(TUserReminder tUserReminder) {
+        if (RepeatRuleConst.CRON.equals(tUserReminder.getRepeatRule())) {
+            // 1. 兼容 5/6 段 + 语法校验 + 最小间隔校验
+            String normalized = CronUtil.normalizeAndValidate(tUserReminder.getCronExpr());
+
+            // 2. 用标准化后的 6 段表达式覆盖保存
+            tUserReminder.setCronExpr(normalized);
+        }
+
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TUserReminder insert(TUserReminder tUserReminder) {
 
         // 1. 基础校验
-        if (!RepeatType.checkRepeatType(tUserReminder.getRepeatRule())) {
+        if (!RepeatRuleConst.checkRepeatType(tUserReminder.getRepeatRule())) {
             throw new ServiceException("非法的重复类型:" + tUserReminder.getRepeatRule());
         }
 
         // 自定义模式校验
-        if (RepeatType.CUSTOM.equals(tUserReminder.getRepeatRule())
+        if (RepeatRuleConst.CUSTOM.equals(tUserReminder.getRepeatRule())
                 && (tUserReminder.getCustomMode() == null || tUserReminder.getCustomMode().isEmpty())) {
             throw new ServiceException("自定义重复模式不能为空");
         }
+
+        checkCron(tUserReminder);
 
         // 默认间隔
         if (tUserReminder.getRepeatInterval() == null || tUserReminder.getRepeatInterval() <= 0) {
@@ -186,7 +204,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
             for (TUserReminderItem item : items) {
 
                 if (tUserReminder.getRemindTime().isBefore(LocalDateTime.now())){
-                    Long nextRemindTime = ScheduleUtil.getNextRemindTime(tUserReminder, item );
+                    Long nextRemindTime = ScheduleUtil.getNextRemindTime(tUserReminder, item, Constants.NOT_FOR_SCHEDULE);
                     if (nextRemindTime == null) {
                         expired = true;
                     }else{
@@ -233,7 +251,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
             // ✅ 注意：这里最好用 item 的时间判断，而不是 main 的时间
             if (item.getRemindTime().isBefore(now)) {
                 // 已经在过去了，算下一次
-                Long next = ScheduleUtil.getNextRemindTime(main, item);
+                Long next = ScheduleUtil.getNextRemindTime(main, item, Constants.FOR_SCHEDULE);
                 if (next == null) {
                     continue; // 这个子项彻底没有下次了
                 }
@@ -256,8 +274,33 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
         String repeatRule = main.getRepeatRule();
 
+        // 如果是 CRON 类型，特殊处理：
+        if (RepeatRuleConst.CRON.equals(repeatRule)  && StringUtils.isNotEmpty(main.getCronExpr())) {
+            TUserReminderItem item = new TUserReminderItem();
+            item.setRepeatRule(repeatRule);
+            item.setMainId(main.getId());
+            item.setUserId(main.getUserId());
+            item.setTitle(main.getTitle());
+            item.setContent(main.getContent());
+            item.setRepeatInterval(main.getRepeatInterval());
+            item.setStatus(RemindStatus.ON);
+
+            // 用 cron 算第一次时间
+            Long nextRemindTime = ScheduleUtil.getNextRemindTime(main, item, Constants.NOT_FOR_SCHEDULE);
+            if (nextRemindTime == null) {
+                // 没有下一次，直接返回空列表，相当于不创建子项
+                return Collections.emptyList();
+            }
+            item.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
+            item.setCreateTime(LocalDateTime.now());
+            item.setUpdateTime(LocalDateTime.now());
+
+
+            return Collections.singletonList(item);
+        }
+
         // 1. 自定义类型（生日 / 纪念日）
-        if (RepeatType.CUSTOM.equals(repeatRule)) {
+        if (RepeatRuleConst.CUSTOM.equals(repeatRule)) {
             return buildCustomItems(main);
         }
 
@@ -265,11 +308,11 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         List<LocalTime> timePoints = parseTimePoints(main);
 
         // 2. 需要多个子项的固定类型（每周 / 每月 / 每年）
-        if (RepeatType.isMultiItemRepeatType(repeatRule)) {
+        if (RepeatRuleConst.isMultiItemRepeatType(repeatRule)) {
             return buildMultiItemRepeatItems(main, timePoints);
         }
 
-        // 3. 其它类型（NONE / DAILY / WORKDAY / WEEKEND ...）
+        // 3. 其它类型（NONE / DAILY / WORKDAY / WEEKEND ,CRON...）
         return buildSingleItems(main, timePoints);
     }
 
@@ -300,11 +343,11 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
     private List<TUserReminderItem> buildMultiItemRepeatItems(TUserReminder main, List<LocalTime> timePoints) {
         switch (main.getRepeatRule()) {
-            case RepeatType.WEEKLY:
+            case RepeatRuleConst.WEEKLY:
                 return buildWeeklyItems(main, timePoints);
-            case RepeatType.MONTHLY:
+            case RepeatRuleConst.MONTHLY:
                 return buildMonthlyItems(main, timePoints);
-            case RepeatType.YEARLY:
+            case RepeatRuleConst.YEARLY:
                 return buildYearlyItems(main, timePoints);
             default:
                 return Collections.emptyList();
@@ -366,7 +409,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
                 TUserReminderItem item = baseItemFromMain(main);
                 item.setRemindTime(remindTime);
-                item.setRepeatRule(RepeatType.YEARLY);
+                item.setRepeatRule(RepeatRuleConst.YEARLY);
                 item.setRepeatInterval(main.getRepeatInterval());
                 result.add(item);
             }
@@ -419,7 +462,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
                 TUserReminderItem item = baseItemFromMain(main);
                 item.setRemindTime(remindTime);
-                item.setRepeatRule(RepeatType.MONTHLY);
+                item.setRepeatRule(RepeatRuleConst.MONTHLY);
                 item.setRepeatInterval(main.getRepeatInterval());
                 result.add(item);
             }
@@ -473,7 +516,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
 
                 TUserReminderItem item = baseItemFromMain(main);
                 item.setRemindTime(remindTime);
-                item.setRepeatRule(RepeatType.WEEKLY);
+                item.setRepeatRule(RepeatRuleConst.WEEKLY);
                 item.setRepeatInterval(main.getRepeatInterval());
                 result.add(item);
             }
@@ -559,14 +602,14 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         // 当天
         TUserReminderItem onDay = baseItemFromMain(main);
         onDay.setRemindTime(base);
-        onDay.setRepeatRule(RepeatType.YEARLY);
+        onDay.setRepeatRule(RepeatRuleConst.YEARLY);
         result.add(onDay);
 
         // 提前提醒
         if (advanceDays > 0) {
             TUserReminderItem advanceItem = baseItemFromMain(main);
             advanceItem.setRemindTime(base.minusDays(advanceDays));
-            advanceItem.setRepeatRule(RepeatType.YEARLY);
+            advanceItem.setRepeatRule(RepeatRuleConst.YEARLY);
             result.add(advanceItem);
         }
 
@@ -609,7 +652,6 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         if (patch.getId() == null) {
             throw new ServiceException("id 不能为空");
         }
-
         TUserReminder db = this.getById(patch.getId());
         if (db == null) {
             throw new ServiceException("提醒不存在");
@@ -625,6 +667,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         if (onlyStatusChange && !scheduleFieldChanged) {
             return updateStatusOnly(db, patch.getStatus());
         }
+        checkCron(patch);
 
         // ② 没改时间&重复，只改标题/内容/通知方式等
         if (!scheduleFieldChanged) {
@@ -638,10 +681,10 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         mergeNotNull(patch, db);
 
         // 校验（跟 insert 一样）
-        if (!RepeatType.checkRepeatType(db.getRepeatRule())) {
+        if (!RepeatRuleConst.checkRepeatType(db.getRepeatRule())) {
             throw new ServiceException("非法的重复类型:" + db.getRepeatRule());
         }
-        if (RepeatType.CUSTOM.equals(db.getRepeatRule())
+        if (RepeatRuleConst.CUSTOM.equals(db.getRepeatRule())
                 && (db.getCustomMode() == null || db.getCustomMode().isEmpty())) {
             throw new ServiceException("自定义重复模式不能为空");
         }
@@ -736,7 +779,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
                     fireTime = DateUtil.toTimestamp(item.getRemindTime());
                 } else {
                     // 2) 子项时间已经在过去了，需要重新算下一次
-                    Long next = ScheduleUtil.getNextRemindTime(db, item);
+                    Long next = ScheduleUtil.getNextRemindTime(db, item, Constants.NOT_FOR_SCHEDULE);
                     if (next == null) {
                         // 这个子项确实已经无后续了，标记为过期
                         item.setStatus(RemindStatus.EXPIRED);
@@ -813,7 +856,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
             // ✅ 注意：这里最好用 item 的时间判断，而不是 main 的时间
             if (item.getRemindTime().isBefore(now)) {
                 // 已经在过去了，算下一次
-                Long next = ScheduleUtil.getNextRemindTime(main, item);
+                Long next = ScheduleUtil.getNextRemindTime(main, item, Constants.NOT_FOR_SCHEDULE);
                 if (next == null) {
                     continue; // 这个子项彻底没有下次了
                 }
@@ -848,6 +891,21 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         if (src.getTitle() != null) {
             target.setTitle(src.getTitle());
         }
+
+        if (src.getCronExpr() != null) {
+            target.setCronExpr(src.getCronExpr());
+        }
+
+
+        if (src.getCronEndTime() != null) {
+            target.setCronEndTime(src.getCronEndTime());
+        }
+
+
+        if (src.getCronStartTime() != null) {
+            target.setCronStartTime(src.getCronStartTime());
+        }
+
         if (src.getContent() != null) {
             target.setContent(src.getContent());
         }

@@ -149,7 +149,7 @@ public abstract class ZSetDelayScheduler implements Runnable, InitializingBean, 
      */
     public void cancelSchedule(String... taskPayloads) {
         Long remove = redisTemplate.opsForZSet().remove(zSetKey, getZSetValue(taskPayloads));
-        log.info("cancelSchedule {}, {}", getZSetValue(taskPayloads));
+        log.info("cancelSchedule {}, {}", getZSetValue(taskPayloads), remove);
     }
 
     private String getZSetValue(String... taskPayloads) {

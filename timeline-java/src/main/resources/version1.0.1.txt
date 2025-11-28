@@ -1,0 +1,4 @@
+ALTER TABLE t_user_reminder
+    ADD COLUMN cron_expr VARCHAR(128) NULL COMMENT 'cron 表达式，使用 CRON 模式时必填',
+    ADD COLUMN cron_start_time DATETIME NULL COMMENT 'cron 生效开始时间，可空',
+    ADD COLUMN cron_end_time DATETIME NULL COMMENT 'cron 生效结束时间，可空';

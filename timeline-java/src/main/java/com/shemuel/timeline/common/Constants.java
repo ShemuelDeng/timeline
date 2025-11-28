@@ -25,4 +25,7 @@ public class Constants {
 
     public static final Integer active = 1;
     public static final Integer NO_active = 0;
+
+    public static final boolean FOR_SCHEDULE = true;
+    public static final boolean NOT_FOR_SCHEDULE = false;
 }

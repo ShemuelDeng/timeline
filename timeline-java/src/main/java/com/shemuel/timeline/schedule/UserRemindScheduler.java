@@ -84,7 +84,7 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
 
 
         // 3. 根据子项计算下一次提醒时间，并推进每个子项的 remindTime
-        Long nextRemindTime = ScheduleUtil.getNextRemindTime(remind, remindItem);
+        Long nextRemindTime = ScheduleUtil.getNextRemindTime(remind, remindItem, Constants.FOR_SCHEDULE);
         if (nextRemindTime == null) {
             log.info("任务提醒，user:{}, userId：{}, 本提醒任务已完结，无下次提醒", userId,remind.getId());
             remindItem.setStatus(RemindStatus.EXPIRED);
