@@ -35,7 +35,7 @@ public class ScheduleUtil {
         }
 
         // 优先使用cron
-        if (StringUtils.isNotEmpty(main.getCronExpr())){
+        if (main.getRepeatRule() == RepeatRuleConst.CRON && StringUtils.isNotEmpty(main.getCronExpr())){
             return getNextByCron(main, sub, isForSchedule);
         }
 
