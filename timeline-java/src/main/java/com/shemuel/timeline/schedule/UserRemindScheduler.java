@@ -107,6 +107,11 @@ public class UserRemindScheduler extends ZSetDelayScheduler{
                 userId, remind.getTitle(), remindItem.getRemindTime());
     }
 
+    @Override
+    protected Integer delayKeyExpireTime() {
+        return -1;
+    }
+
     private void checkAndSetMainStatus(TUserReminder remind ){
         TUserReminderItem param = new TUserReminderItem();
         param.setMainId(remind.getId());
