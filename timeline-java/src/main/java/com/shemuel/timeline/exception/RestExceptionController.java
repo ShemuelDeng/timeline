@@ -3,6 +3,7 @@ package com.shemuel.timeline.exception;
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.util.SaResult;
 import com.shemuel.timeline.common.RestResult;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.internal.engine.path.PathImpl;
 import org.springframework.context.annotation.Configuration;
@@ -92,10 +93,23 @@ public class RestExceptionController {
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    public RestResult handleError(HttpRequestMethodNotSupportedException e) {
-        log.error("不支持当前请求方法:{}", e.getMessage());
-        return RestResult.fail(405,
-                "不支持当前请求方法");
+    public RestResult handleError(HttpRequestMethodNotSupportedException e, HttpServletRequest request) {
+
+        String method = request.getMethod();                 // 实际请求方法
+        String uri = request.getRequestURI();                // /api/xxx
+        String url = request.getRequestURL().toString();     // http://host/api/xxx
+        String query = request.getQueryString();             // a=1&b=2
+
+        log.error("405 METHOD_NOT_ALLOWED: method={}, uri={}, url={}, query={}, supported={}, msg={}",
+                method,
+                uri,
+                url,
+                query,
+                e.getSupportedHttpMethods(),
+                e.getMessage()
+        );
+
+        return RestResult.fail(405, "不支持当前请求方法");
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
