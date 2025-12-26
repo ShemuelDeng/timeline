@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -90,7 +91,7 @@ public class ReminderPushService {
         msg.setPosition(WindowPosition.positionMap.get(tUserReminder.getNotifyDesktopPosition()));
         msg.setStyle( setting == null ? 2 : setting.getRemindPopupTheme());
 
-        if (tUserReminder.getNotifySound() == Constants.active){
+        if (Objects.equals(tUserReminder.getNotifySound(), Constants.active)){
             msg.setSoundFile(tUserReminder.getNotifySoundFile());
         }
 

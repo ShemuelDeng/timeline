@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shemuel.timeline.common.*;
 import com.shemuel.timeline.exception.ServiceException;
+import com.shemuel.timeline.service.AiQuotaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.web.bind.annotation.*;
 import com.shemuel.timeline.entity.TUserReminder;
@@ -35,6 +37,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 @Tag(name = "用户提醒表主表， 只记录用户需要的提醒类型，方式管理")
 public class TUserReminderController {
 
+    @Autowired
+    private AiQuotaService aiQuotaService;
     @Value("${remind.record.count:50}")
     private String maxRemindCount;
 
@@ -207,8 +211,15 @@ public class TUserReminderController {
         if (StringUtils.isEmpty(userWords)){
             return RestResult.error("请输入内容");
         }
-
         long userId = StpUtil.getLoginIdAsLong();
+
+        // 2. 先检查 & 占用今日 AI 配额（Redis 实现）
+        boolean allowed = aiQuotaService.tryUseOnce(userId);
+        if (!allowed) {
+            return RestResult.error("今天 AI 创建提醒次数已用完（每天最多 3 次）");
+        }
+
+
         checkCount(userId);
 
 

@@ -82,7 +82,7 @@ public class UserService {
         }
 
         String openId = r.getOpen_id();
-        String nickname = "utoos-" +  r.getNickname();
+        String nickname = "utoos-" +  openId;
         String avatar = r.getAvatar();
 
         UserProfile user = null;
@@ -98,7 +98,7 @@ public class UserService {
 
         // 2. 首次进来，自动注册一个账号
         user = new UserProfile();
-        user.setUserName(generateUserName(openId, nickname));
+        user.setUserName(nickname);
         user.setNickname(nickname);
         user.setAvatarUrl(avatar);
         user.setUtoolsId(openId);
@@ -110,15 +110,42 @@ public class UserService {
         String bcryptHash = passwordEncoder().encode(randomPwd);
         user.setPasswordHash(bcryptHash);
 
-        userRepository.saveOrUpdate(user);
-        return user;
+        try {
+            userRepository.saveOrUpdate(user); // insert
+            return user;
+        } catch (DuplicateKeyException e) {
+            // 3. 这里很大概率就是并发导致的重复插入
+            //    或者历史上已有同名账号
+
+            // 先按 utoolsId 再查一次（并发注册的情况）
+            Optional<UserProfile> existByUtoolsId = userRepository.findByUtoolsId(openId);
+            if (existByUtoolsId.isPresent()) {
+                return existByUtoolsId.get();
+            }
+
+            // 再按 userName 查一下（历史数据 / 兼容）
+            Optional<UserProfile> existByUserName = userRepository.findByUsername(nickname);
+            if (existByUserName.isPresent()) {
+                UserProfile exist = existByUserName.get();
+                // 如果需要，可以顺手把 utoolsId 补上
+                if (exist.getUtoolsId() == null) {
+                    exist.setUtoolsId(openId);
+                    exist.setSourceType("utools");
+                    userRepository.saveOrUpdate(exist);
+                }
+                return exist;
+            }
+
+            // 真的是很诡异的情况，再把异常抛出去
+            throw e;
+        }
     }
 
     private String generateUserName(String openId, String nickname) {
         if (nickname != null && !nickname.isEmpty()) {
             return nickname;
         }
-        return "utools_" + openId.substring(0, 8);
+        return "utools_" + openId;
     }
     private PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

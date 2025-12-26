@@ -169,6 +169,14 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
     @Transactional(rollbackFor = Exception.class)
     public TUserReminder insert(TUserReminder tUserReminder) {
 
+        Long count = lambdaQuery().eq(TUserReminder::getUserId, StpUtil.getLoginIdAsLong())
+                .eq(TUserReminder::getVisible, Constants.active)
+                .count();
+
+        if (count > 100){
+            throw new ServiceException("最多可以创建100个提醒，请删除一个后重试~");
+        }
+
         // 1. 基础校验
         if (!RepeatRuleConst.checkRepeatType(tUserReminder.getRepeatRule())) {
             throw new ServiceException("非法的重复类型:" + tUserReminder.getRepeatRule());
