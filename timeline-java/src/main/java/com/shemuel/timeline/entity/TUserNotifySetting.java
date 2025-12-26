@@ -46,6 +46,9 @@ public class TUserNotifySetting implements Serializable {
     @Schema(description = "钉钉机器人加签 Secret")
     private String dingdingSecret;
 
+    @Schema(description = "提醒弹框主题：0深色，1浅色，2跟随系统")
+    private Integer remindPopupTheme;
+
     @Schema(description = "")
     private LocalDateTime createTime;
 

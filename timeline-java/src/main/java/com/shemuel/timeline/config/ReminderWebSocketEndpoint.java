@@ -1,5 +1,6 @@
 package com.shemuel.timeline.config;
 
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
@@ -8,6 +9,7 @@ import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @ServerEndpoint("/ws/reminder")   // ws://host/ws/reminder?token=xxx
 public class ReminderWebSocketEndpoint {
 
+    private static final CloseReason.CloseCode CODE_NO_TOKEN = () -> 4000;
+    private static final CloseReason.CloseCode CODE_TOKEN_TIMEOUT = () -> 4001;
+    private static final CloseReason.CloseCode CODE_TOKEN_INVALID = () -> 4002;
+
+    private static CloseReason close(int code, String reason) {
+        return new CloseReason(() -> code, reason);
+    }
     // userId -> 多个 session（用户可以打开多个 utools 窗口）
     private static final Map<Long, Set<Session>> USER_SESSIONS = new ConcurrentHashMap<>();
 
@@ -30,7 +39,7 @@ public class ReminderWebSocketEndpoint {
         try {
             String query = session.getQueryString();   // token=xxxx
             if (query == null) {
-                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "no token"));
+                session.close(close(4000, "NO_TOKEN"));
                 return;
             }
 
@@ -43,29 +52,39 @@ public class ReminderWebSocketEndpoint {
                 }
             }
             if (token == null || token.isEmpty()) {
-                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "no token"));
+                session.close(close(4000, "NO_TOKEN"));
                 return;
             }
 
-            // 用 Sa-Token 解析登录用户
-            Object loginId = StpUtil.getLoginIdByToken(token);
+            // 存一下 token，后面心跳可复验（可选，但很实用）
+            session.getUserProperties().put("token", token);
+
+            Object loginId;
+            try {
+                loginId = StpUtil.getLoginIdByToken(token);
+            } catch (NotLoginException e) {
+                // 这里能区分很多类型：TOKEN_TIMEOUT / INVALID_TOKEN / BE_REPLACED / KICK_OUT ...
+                String type = e.getType();
+                if (NotLoginException.TOKEN_TIMEOUT.equals(type)) {
+                    session.close(close(4001, "TOKEN_TIMEOUT"));
+                } else {
+                    session.close(close(4002, "TOKEN_INVALID:" + type));
+                }
+                return;
+            }
+
             if (loginId == null) {
-                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "invalid token"));
+                session.close(close(4002, "TOKEN_INVALID"));
                 return;
             }
 
             currentUserId = Long.parseLong(loginId.toString());
-            USER_SESSIONS
-                    .computeIfAbsent(currentUserId, k -> ConcurrentHashMap.newKeySet())
-                    .add(session);
+            USER_SESSIONS.computeIfAbsent(currentUserId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
             log.info("reminder ws connected, userId={}, sessionId={}", currentUserId, session.getId());
         } catch (Exception e) {
             log.error("ws onOpen error", e);
-            try {
-                session.close();
-            } catch (IOException ignore) {
-            }
+            try { session.close(); } catch (IOException ignore) {}
         }
     }
 
@@ -75,23 +94,41 @@ public class ReminderWebSocketEndpoint {
         try {
             if (message == null) return;
             String text = message.trim();
-            // 兼容纯文本 "PING"
-            if ("PING".equalsIgnoreCase(text)) {
-                session.getAsyncRemote().sendText("PONG");
-                return;
+
+            boolean isPing = "PING".equalsIgnoreCase(text);
+            if (!isPing) {
+                try {
+                    JSONObject obj = JSON.parseObject(text);
+                    isPing = "PING".equalsIgnoreCase(obj.getString("type"));
+                } catch (Exception ignore) {}
             }
 
-            // 兼容 JSON {"type":"PING"}
-            JSONObject obj = JSON.parseObject(text);
-            String type = obj.getString("type");
-            if ("PING".equalsIgnoreCase(type)) {
-                // 这里也用 JSON 回复，前端好识别
-                session.getAsyncRemote().sendText("{\"type\":\"PONG\"}");
+            if (!isPing) return;
+
+            String token = (String) session.getUserProperties().get("token");
+            if (token != null) {
+                try {
+                    Object loginId = StpUtil.getLoginIdByToken(token);
+                    if (loginId == null) {
+                        session.close(close(4002, "TOKEN_INVALID"));
+                        return;
+                    }
+                } catch (NotLoginException e) {
+                    if (NotLoginException.TOKEN_TIMEOUT.equals(e.getType())) {
+                        session.close(close(4001, "TOKEN_TIMEOUT"));
+                    } else {
+                        session.close(close(4002, "TOKEN_INVALID:" + e.getType()));
+                    }
+                    return;
+                }
             }
+
+            session.getAsyncRemote().sendText("{\"type\":\"PONG\"}");
         } catch (Exception e) {
             log.warn("ws onMessage parse error, msg={}", message, e);
         }
     }
+
 
 
     @OnClose
@@ -109,14 +146,55 @@ public class ReminderWebSocketEndpoint {
     }
 
     @OnError
-    public void onError(Session session, Throwable thr) {
-        log.warn("reminder ws error, sessionId={}", session.getId(), thr);
+    public void onError(Session session, Throwable t) {
+        String sid = session != null ? session.getId() : "null";
+
+        if (isClientDisconnect(t)) {
+            // 这类就是：客户端/代理断开了，属于正常波动
+            log.info("reminder ws closed by peer, sessionId={}, reason={}", sid, t.toString());
+            safeClose(session);
+            return;
+        }
+
+        log.error("reminder ws error, sessionId={}", sid, t);
+        safeClose(session);
+    }
+
+    private boolean isClientDisconnect(Throwable t) {
+        if (t instanceof EOFException) return true;
+
+        // 有时 EOF 包在 IOException / RuntimeException 里
+        Throwable cur = t;
+        while (cur != null) {
+            if (cur instanceof EOFException) return true;
+            if (cur instanceof IOException) {
+                String msg = cur.getMessage();
+                if (msg != null) {
+                    String m = msg.toLowerCase();
+                    if (m.contains("broken pipe") || m.contains("connection reset") || m.contains("reset by peer")) {
+                        return true;
+                    }
+                }
+            }
+            cur = cur.getCause();
+        }
+        return false;
+    }
+
+    private void safeClose(Session session) {
+        if (session == null) return;
+        try {
+            if (session.isOpen()) session.close();
+        } catch (Exception ignored) {}
     }
 
     // 对外暴露：给某个用户发消息
     public static void sendToUser(Long userId, Object payload) {
         Set<Session> sessions = USER_SESSIONS.get(userId);
-        if (sessions == null || sessions.isEmpty()) return;
+        if (sessions == null || sessions.isEmpty()) {
+            log.info("推送提醒任务时，用户ws已经断开{}", userId);
+            return;
+        }
 
         String text = (payload instanceof String) ? (String) payload : JSON.toJSONString(payload);
         for (Session s : sessions) {

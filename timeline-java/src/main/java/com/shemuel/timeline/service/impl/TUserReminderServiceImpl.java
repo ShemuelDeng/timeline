@@ -231,6 +231,11 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
             }
         }
 
+        // 5. 如果是cron模式， 再更新一下main
+        if(Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.CRON)){
+            this.update(tUserReminder);
+        }
+
         return tUserReminder;
     }
 
@@ -291,7 +296,9 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
                 // 没有下一次，直接返回空列表，相当于不创建子项
                 return Collections.emptyList();
             }
-            item.setRemindTime(DateUtil.fromTimestamp(nextRemindTime));
+            LocalDateTime remindTime = DateUtil.fromTimestamp(nextRemindTime);
+            main.setRemindTime(remindTime);
+            item.setRemindTime(remindTime);
             item.setCreateTime(LocalDateTime.now());
             item.setUpdateTime(LocalDateTime.now());
 

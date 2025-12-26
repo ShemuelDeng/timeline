@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronExpression;
 
 import java.time.*;
+import java.util.Objects;
 
 
 /**
@@ -35,7 +36,7 @@ public class ScheduleUtil {
         }
 
         // 优先使用cron
-        if (main.getRepeatRule() == RepeatRuleConst.CRON && StringUtils.isNotEmpty(main.getCronExpr())){
+        if (Objects.equals(main.getRepeatRule() , RepeatRuleConst.CRON) && StringUtils.isNotEmpty(main.getCronExpr())){
             return getNextByCron(main, sub, isForSchedule);
         }
 

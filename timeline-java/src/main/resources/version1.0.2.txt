@@ -1,0 +1,3 @@
+ALTER TABLE t_user_notify_setting
+ADD COLUMN remind_popup_theme TINYINT NOT NULL DEFAULT 2
+COMMENT '提醒弹框主题：0深色，1浅色，2跟随系统';

@@ -8,7 +8,7 @@ sa-token:
   # token 名称（同时也是 cookie 名称）
   token-name: Authorization
   # token 有效期（单位：秒） 默认30天，-1 代表永久有效
-  timeout: 2592000
+  timeout: 300
   # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
   active-timeout: -1
   # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
@@ -45,29 +45,37 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 20MB
+  ai:
+    deepseek:
+      base-url: https://api.siliconflow.cn
+      api-key: sk-zxeiwtxgnhqtkuwthngcfykknudiqrhjjmdibyrzkchtdxhl
+      chat:
+        options:
+          model: Qwen/Qwen2.5-7B-Instruct
 
   # redis配置
-  redis:
-    # Redis数据库索引（默认为0）
-    database: 1
-    # Redis服务器地址
-    host: 172.16.6.59
-    # Redis服务器连接端口
-    port: 6379
-    # Redis服务器连接密码（默认为空）
-    password: 123456
-    # 连接超时时间
-    timeout: 10s
-    lettuce:
-      pool:
-        # 连接池最大连接数
-        max-active: 200
-        # 连接池最大阻塞等待时间（使用负值表示没有限制）
-        max-wait: -1ms
-        # 连接池中的最大空闲连接
-        max-idle: 10
-        # 连接池中的最小空闲连接
-        min-idle: 0
+  data:
+    redis:
+      # Redis数据库索引（默认为0）
+      database: 1
+      # Redis服务器地址
+      host: 172.16.6.59
+      # Redis服务器连接端口
+      port: 6379
+      # Redis服务器连接密码（默认为空）
+      password: 123456
+      # 连接超时时间
+      timeout: 10s
+      lettuce:
+        pool:
+          # 连接池最大连接数
+          max-active: 200
+          # 连接池最大阻塞等待时间（使用负值表示没有限制）
+          max-wait: -1ms
+          # 连接池中的最大空闲连接
+          max-idle: 10
+          # 连接池中的最小空闲连接
+          min-idle: 0
 
 
 #  mvc:
@@ -106,15 +114,19 @@ knife4j:
 
 
 wx:
-  appid: wx7b4a5857a94deb45
-  secret: b43d4aacccdf8200e48a207ea7748eb5
+  appid: wx9cecb308001f2faa
+  secret: 1d30dcc885107c0dfdc604f9859d452d
   openIds: o5Vf67DEFy-mHQ3UZJcU6Gyf1T5c
   templateId:
     gold: mylZLVa52KIvhJtZjS0kmvjxNesvjzngU1Ll0GMx9Lw
+    weather: H9xbfcJ0eKZdhiI8Qo-JB9RTwARQV9_rkf07i3478I4
+    notice: NXaXq4k86Qlm-APjb2c74jtDYv3KLCdQKMa4P_GGffU
+  corp:
+    group:
+      robot-key: ef9d3a08-dd78-41f1-bcf8-fb9c389999ab
 
 gaode:
-  api:
-    key: dc9a8412cdc58d95c2ab7e5aa87323b6
+  areas: "110115,110105,440307"
 
 
 dromara:
@@ -138,3 +150,12 @@ s3:
   endpoint: https://s3.cn-east-1.qiniucs.com/
   region: cn-east-1
   base-path: base/timeline/
+
+
+utools:
+  plugin-id: zeehanp1          # 你的插件 ID
+  secret: XnqCE89esCWq4CyGsZJlnYbw0oY72LmA # 在 uTools 后台重置得到
+
+remind:
+  record:
+    count: 100

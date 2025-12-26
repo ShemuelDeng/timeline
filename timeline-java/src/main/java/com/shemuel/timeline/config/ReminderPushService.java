@@ -47,6 +47,7 @@ public class ReminderPushService {
         private String position;
         private String soundFile = "";
         private Integer systemNotify;
+        private Integer style;
         @JSONField(format = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime remindTime;
     }
@@ -55,13 +56,14 @@ public class ReminderPushService {
         Long userId = remindItem.getUserId();
 
         // 1. 构造 WS 消息并推送
-        pushWebSocket(tUserReminder, remindItem, userId);
 
         // 2. 查询用户级通知配置（可能为 null）
         TUserNotifySetting setting = userNotifySettingService.getOne(
                 new LambdaQueryWrapper<TUserNotifySetting>()
                         .eq(TUserNotifySetting::getUserId, userId)
         );
+
+        pushWebSocket(tUserReminder, remindItem, userId, setting);
 
         // 统一的文本内容（供各平台复用）
         String notifyText = buildNotifyText(remindItem);
@@ -78,7 +80,7 @@ public class ReminderPushService {
 
 
 
-    private void pushWebSocket(TUserReminder tUserReminder, TUserReminderItem remindItem, Long userId) {
+    private void pushWebSocket(TUserReminder tUserReminder, TUserReminderItem remindItem, Long userId, TUserNotifySetting setting) {
         ReminderMsg msg = new ReminderMsg();
         msg.setReminderId(tUserReminder.getId());
         msg.setTitle(remindItem.getTitle());
@@ -86,6 +88,7 @@ public class ReminderPushService {
         msg.setRemindTime(remindItem.getRemindTime());
         msg.setSystemNotify(tUserReminder.getNotifySystem());
         msg.setPosition(WindowPosition.positionMap.get(tUserReminder.getNotifyDesktopPosition()));
+        msg.setStyle( setting == null ? 2 : setting.getRemindPopupTheme());
 
         if (tUserReminder.getNotifySound() == Constants.active){
             msg.setSoundFile(tUserReminder.getNotifySoundFile());

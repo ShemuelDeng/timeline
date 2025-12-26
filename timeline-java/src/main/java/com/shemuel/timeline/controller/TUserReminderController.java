@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shemuel.timeline.common.*;
 import com.shemuel.timeline.exception.ServiceException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.web.bind.annotation.*;
 import com.shemuel.timeline.entity.TUserReminder;
@@ -33,6 +35,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 @Tag(name = "用户提醒表主表， 只记录用户需要的提醒类型，方式管理")
 public class TUserReminderController {
 
+    @Value("${remind.record.count:50}")
+    private String maxRemindCount;
 
     private  final  TUserReminderService tUserReminderService;
 
@@ -204,6 +208,10 @@ public class TUserReminderController {
             return RestResult.error("请输入内容");
         }
 
+        long userId = StpUtil.getLoginIdAsLong();
+        checkCount(userId);
+
+
         ZoneId zone = ZoneId.of("Asia/Shanghai");
         LocalDate today = LocalDate.now(zone);
         LocalTime now = LocalTime.now(zone);
@@ -222,7 +230,7 @@ public class TUserReminderController {
         log.info("一句话创建提醒 {},{}", userWords,  content);
 
         TUserReminder parsed = JSON.parseObject(content.replace("```", "").replace("json", ""), TUserReminder.class);
-        parsed.setUserId(StpUtil.getLoginIdAsLong());
+        parsed.setUserId(userId);
 
         tUserReminderService.insert(parsed);
         return RestResult.success("ok");
@@ -247,12 +255,24 @@ public class TUserReminderController {
     public RestResult<Object> add(@RequestBody TUserReminder tUserReminder) {
 
         tUserReminder.setUserId(StpUtil.getLoginIdAsLong());
+
+        checkCount(tUserReminder.getUserId());
         checkParams(tUserReminder);
         return RestResult.success(tUserReminderService.insert(tUserReminder));
     }
 
+    private void checkCount(Long userId) {
+        LambdaQueryWrapper<TUserReminder> countQuery = new LambdaQueryWrapper<>();
+        countQuery.eq(TUserReminder::getUserId, userId);
+        countQuery.eq(TUserReminder::getVisible, Constants.active);
+        long count = tUserReminderService.count(countQuery);
+        if (count > Long.parseLong(maxRemindCount)){
+            throw new ServiceException("最多只能创建50个提醒哦~");
+        }
+    }
+
     @GetMapping("/getNextRemindTime/{id}")
-    @Operation(summary = "添加用户提醒表主表， 只记录用户需要的提醒类型，方式")
+    @Operation(summary = "获取下次提醒时间")
     public RestResult<LocalDateTime> getNextRemindTime(@PathVariable("id") Long id) {
 
         return RestResult.success(tUserReminderService.getNextRemindTime(id));
