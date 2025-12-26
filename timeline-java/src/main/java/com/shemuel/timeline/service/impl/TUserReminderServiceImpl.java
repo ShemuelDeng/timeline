@@ -288,7 +288,7 @@ public class TUserReminderServiceImpl extends ServiceImpl<TUserReminderMapper, T
         String repeatRule = main.getRepeatRule();
 
         // 如果是 CRON 类型，特殊处理：
-        if (RepeatRuleConst.CRON.equals(repeatRule)  && StringUtils.isNotEmpty(main.getCronExpr())) {
+        if (Objects.equals(repeatRule, RepeatRuleConst.CRON)  && StringUtils.isNotEmpty(main.getCronExpr())) {
             TUserReminderItem item = new TUserReminderItem();
             item.setRepeatRule(repeatRule);
             item.setMainId(main.getId());
