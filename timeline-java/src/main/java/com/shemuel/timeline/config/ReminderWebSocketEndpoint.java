@@ -34,6 +34,12 @@ public class ReminderWebSocketEndpoint {
 
     private Long currentUserId;
 
+
+    public ReminderWebSocketEndpoint() {
+        log.info("new ReminderWebSocketEndpoint instance: {}", System.identityHashCode(this));
+    }
+
+
     @OnOpen
     public void onOpen(Session session) {
         try {
@@ -81,7 +87,7 @@ public class ReminderWebSocketEndpoint {
             currentUserId = Long.parseLong(loginId.toString());
             USER_SESSIONS.computeIfAbsent(currentUserId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
-            log.info("reminder ws connected, userId={}, sessionId={}", currentUserId, session.getId());
+            log.info("reminder ws connected, userId={}, sessionId={},{}", currentUserId, session.getId(), System.identityHashCode(this));
         } catch (Exception e) {
             log.error("ws onOpen error", e);
             try { session.close(); } catch (IOException ignore) {}
