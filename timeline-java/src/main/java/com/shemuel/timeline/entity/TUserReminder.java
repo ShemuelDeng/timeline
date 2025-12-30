@@ -65,6 +65,9 @@ public class TUserReminder implements Serializable {
     @Schema(description = "是否循环：1：开启， 0：关闭")
     private Integer doCircle;
 
+    @Schema(description = "是否开启ai动态文案：1：开启， 0：关闭")
+    private boolean aiDynamic;
+
     @Schema(description = "循环开始时间")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime circleBegin;

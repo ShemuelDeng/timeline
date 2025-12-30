@@ -49,6 +49,7 @@ public class ReminderPushService {
         private String soundFile = "";
         private Integer systemNotify;
         private Integer style;
+        private boolean aiDynamic;
         @JSONField(format = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime remindTime;
     }
@@ -90,6 +91,7 @@ public class ReminderPushService {
         msg.setSystemNotify(tUserReminder.getNotifySystem());
         msg.setPosition(WindowPosition.positionMap.get(tUserReminder.getNotifyDesktopPosition()));
         msg.setStyle( setting == null ? 2 : setting.getRemindPopupTheme());
+        msg.setAiDynamic(tUserReminder.isAiDynamic());
 
         if (Objects.equals(tUserReminder.getNotifySound(), Constants.active)){
             msg.setSoundFile(tUserReminder.getNotifySoundFile());

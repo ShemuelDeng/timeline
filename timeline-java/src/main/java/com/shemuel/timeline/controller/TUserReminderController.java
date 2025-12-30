@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shemuel.timeline.common.*;
 import com.shemuel.timeline.exception.ServiceException;
 import com.shemuel.timeline.service.AiQuotaService;
+import com.shemuel.timeline.utils.DateUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -320,6 +321,9 @@ public class TUserReminderController {
     }
 
     private void checkParams(TUserReminder tUserReminder) {
+        if (Objects.isNull(tUserReminder.getRemindTime())){
+            throw new ServiceException("提醒时间不能为空");
+        }
         if (!RepeatRuleConst.checkRepeatType(tUserReminder.getRepeatRule())){
             throw new ServiceException("请选择重复规则");
         }
@@ -343,7 +347,8 @@ public class TUserReminderController {
 
         if (Objects.equals(tUserReminder.getRepeatRule(), RepeatRuleConst.YEARLY)){
             if (Objects.isNull(tUserReminder.getSpecifyDates())){
-                throw new ServiceException("请选择每年哪些天");
+                String s = DateUtil.formatLocalDateTime(tUserReminder.getRemindTime(), "MM-dd");
+                tUserReminder.setSpecifyDates(s);
             }
         }
 

@@ -1,0 +1,3 @@
+ALTER TABLE t_user_reminder
+ADD COLUMN ai_dynamic TINYINT NOT NULL DEFAULT 0
+COMMENT 'ai动态文案：1开启， 0关闭';
