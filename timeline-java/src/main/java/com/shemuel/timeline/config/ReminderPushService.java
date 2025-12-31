@@ -8,6 +8,7 @@ import com.shemuel.timeline.common.WindowPosition;
 import com.shemuel.timeline.entity.TUserNotifySetting;
 import com.shemuel.timeline.entity.TUserReminder;
 import com.shemuel.timeline.entity.TUserReminderItem;
+import com.shemuel.timeline.mapper.TUserMetricMapper;
 import com.shemuel.timeline.service.TUserNotifySettingService;
 import com.shemuel.timeline.tools.BarkPushTool;
 import com.shemuel.timeline.tools.DingTalkRobotTool;
@@ -19,7 +20,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 
 @Service
@@ -37,6 +40,9 @@ public class ReminderPushService {
      private DingTalkRobotTool dingTalkRobotTool;
      @Autowired
      private BarkPushTool barkPushTool;
+
+     @Autowired
+     private TUserMetricMapper tUserMetricMapper;
 
 
     @Data
@@ -78,6 +84,15 @@ public class ReminderPushService {
 
         // 5. Bark
         pushBark(tUserReminder,remindItem, setting, userId);
+
+        // 统计数据
+        LocalDate today = LocalDate.from(LocalDateTime.now(ZoneId.of("Asia/Shanghai")));
+        try {
+            tUserMetricMapper.incNotice(userId, today);
+        } catch (Exception e) {
+            log.info("更新统计数据失败", e);
+        }
+
     }
 
 

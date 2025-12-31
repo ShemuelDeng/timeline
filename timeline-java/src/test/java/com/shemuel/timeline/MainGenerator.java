@@ -35,7 +35,7 @@ public class MainGenerator {
 
     @Test
     public void generate() {
-        doGenerate("t_user_notify_setting");
+        doGenerate("t_user_metric");
     }
 
     private void doGenerate(String... tableNames) {

@@ -1,0 +1,23 @@
+CREATE TABLE `t_user_metric` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
+
+  `metric_key` VARCHAR(64) NOT NULL COMMENT '指标类型，如 today_notice / total_notice / today_fish_seconds / total_fish_seconds',
+  `metric_date` DATE NULL COMMENT '指标日期（东八区）。今日类填当天；总量类填 NULL',
+
+  `metric_value` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '指标值（次数/秒等，统一用整数）',
+
+  `meta` JSON NULL COMMENT '扩展信息（可选）',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+
+  -- 生成列：把 NULL 日期映射成固定日期，便于做唯一约束（总量指标也只能一条）
+  `metric_date_key` DATE AS (IFNULL(`metric_date`, DATE('1970-01-01'))) STORED COMMENT '用于唯一索引的日期键',
+
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_metric` (`user_id`, `metric_key`, `metric_date_key`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_metric_key` (`metric_key`),
+  KEY `idx_metric_date` (`metric_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='用户指标统计（单表，按指标类型区分；今日类带日期，总量类日期为NULL）';

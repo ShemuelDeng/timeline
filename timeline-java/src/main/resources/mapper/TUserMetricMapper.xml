@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shemuel.timeline.mapper.TUserMetricMapper">
+    <!-- 可以在这里添加自定义的复杂SQL查询 -->
+
+    <resultMap id="UserMetricKVMap" type="com.shemuel.timeline.dto.UserMetricKV">
+        <result column="metric_key" property="metricKey"/>
+        <result column="metric_value" property="metricValue"/>
+    </resultMap>
+
+    <!-- 提醒触发 +1（今日 + 总量一起） -->
+    <insert id="incNotice">
+        INSERT INTO t_user_metric (user_id, metric_key, metric_date, metric_value)
+        VALUES
+            (#{userId}, 'today_notice', #{today, jdbcType=DATE}, 1),
+            (#{userId}, 'total_notice', NULL, 1)
+        ON DUPLICATE KEY UPDATE
+                             metric_value = metric_value + VALUES(metric_value),
+                             updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 摸鱼累计秒数（今日 + 总量一起） -->
+    <insert id="incFishSeconds">
+        INSERT INTO t_user_metric (user_id, metric_key, metric_date, metric_value)
+        VALUES
+            (#{userId}, 'today_fish_seconds', #{today, jdbcType=DATE}, #{deltaSeconds}),
+            (#{userId}, 'total_fish_seconds', NULL, #{deltaSeconds})
+        ON DUPLICATE KEY UPDATE
+                             metric_value = metric_value + VALUES(metric_value),
+                             updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 通用：今日指标累加 -->
+    <insert id="incTodayMetric">
+        INSERT INTO t_user_metric (user_id, metric_key, metric_date, metric_value)
+        VALUES (#{userId}, #{metricKey}, #{today, jdbcType=DATE}, #{delta})
+        ON DUPLICATE KEY UPDATE
+                             metric_value = metric_value + VALUES(metric_value),
+                             updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 通用：总量指标累加 -->
+    <insert id="incTotalMetric">
+        INSERT INTO t_user_metric (user_id, metric_key, metric_date, metric_value)
+        VALUES (#{userId}, #{metricKey}, NULL, #{delta})
+        ON DUPLICATE KEY UPDATE
+                             metric_value = metric_value + VALUES(metric_value),
+                             updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 查询：今日 + 总量（固定四项） -->
+    <select id="selectBaseMetrics" resultMap="UserMetricKVMap">
+        SELECT metric_key, metric_value
+        FROM t_user_metric
+        WHERE user_id = #{userId}
+          AND (
+                (metric_key IN ('today_notice','today_fish_seconds') AND metric_date = #{today, jdbcType=DATE})
+                OR
+                (metric_key IN ('total_notice','total_fish_seconds') AND metric_date IS NULL)
+            )
+    </select>
+
+</mapper> 
